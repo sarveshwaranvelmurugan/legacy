@@ -46,20 +46,26 @@ npm run dev -- --port 5199    # → http://localhost:5199
 
 ## 4. Connect YOUR evidence sources
 
-On the **Reflect** tab → Evidence Sources panel:
-- flip the GitHub toggle on, enter your GitHub username, hit **Sync**
-- flip the LeetCode toggle on, enter your LeetCode username, hit **Sync**
+Either on the **Reflect** tab → Evidence Sources panel (toggles + Sync), or
+straight from the CLI:
+
+```bash
+./legacy connect github <your-github-username>
+./legacy connect leetcode <your-leetcode-username>
+./legacy sync
+```
 
 Your real public pushes and accepted solves land in the graph as verified
 evidence — this is the "live receipts" beat of the demo. Solve one easy
 LeetCode problem shortly before recording so the sync visibly pulls
 something fresh.
 
-## 5. Try the terminal agent
+## 5. Try the terminal agent + full mode
 
 ```bash
 ./legacy            # observes the repo, primes from memory, then chat
 ./legacy ask "what is this user working on?"
+./legacy setup      # installs the Claude Code skill on YOUR machine (path auto-adjusts)
 ```
 
 ## 6. Pre-recording checklist

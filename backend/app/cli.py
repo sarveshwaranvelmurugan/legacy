@@ -18,7 +18,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from . import cme, cognee_client, config, engines, ledger, observer, project_learner
+from . import cme, cognee_client, config, engines, installer, ledger, observer, project_learner, sources
 
 console = Console()
 _claude = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
@@ -186,13 +186,39 @@ def main() -> None:
             (_remember if _route(line) == "R" else _answer)(line)
 
 
+USAGE = """usage: legacy <command>
+
+  memory      ask <q> | remember <text> | observe | learn | report
+  sources     sources | connect github|leetcode <username> | disconnect <source> | sync [source]
+  install     setup   (wire Claude Code globally)
+              hook    (wire THIS project for Cursor + AGENTS.md agents)
+
+  no command  interactive session (observes workspace, primes, chats)"""
+
+
+def _print_sources() -> None:
+    s = sources.get_settings()
+    for name, cfg in s.items():
+        state = "[green]● connected[/]" if cfg["enabled"] and cfg["username"] else (
+            "[yellow]● enabled, no username[/]" if cfg["enabled"] else "[dim]○ off[/]")
+        user = f" as [bold]{cfg['username']}[/]" if cfg["username"] else ""
+        console.print(f"  {name:<10} {state}{user}")
+
+
+def _sync_source(name: str) -> None:
+    fn = {"github": sources.sync_github, "leetcode": sources.sync_leetcode}[name]
+    with console.status(f"[dim]syncing {name}…[/]"):
+        r = fn()
+    if r.get("error"):
+        console.print(f"[red]{name}: {r['error']}[/]")
+        return
+    console.print(f"[green]✓ {name}: {r['synced']} verified evidence node(s) synced[/]")
+    for s_ in r.get("evidence", []):
+        console.print(f"  [dim]{s_[:110]}[/]")
+
+
 def one_shot(argv: list[str]) -> None:
-    """Non-interactive mode for scripts and other agents (e.g. Claude Code):
-        legacy ask <question>      answer from graph memory, then exit
-        legacy remember <text>     distill + store, then exit
-        legacy observe             observe cwd workspace, then exit
-        legacy report              full report, then exit
-    """
+    """Non-interactive mode for scripts, other agents, and source management."""
     cmd, rest = argv[0], " ".join(argv[1:])
     if cmd == "ask" and rest:
         _answer(rest)
@@ -209,8 +235,32 @@ def one_shot(argv: list[str]) -> None:
         console.print(seen["summary"] if seen else "not a git repository — nothing to observe")
     elif cmd == "report":
         _report()
+    elif cmd == "sources":
+        _print_sources()
+    elif cmd == "connect" and len(argv) >= 3 and argv[1] in ("github", "leetcode"):
+        sources.update_settings({argv[1]: {"enabled": True, "username": argv[2]}})
+        console.print(f"[green]✓ {argv[1]} connected as {argv[2]}[/] — run [bold]legacy sync {argv[1]}[/] to pull evidence")
+    elif cmd == "disconnect" and len(argv) >= 2 and argv[1] in ("github", "leetcode"):
+        sources.update_settings({argv[1]: {"enabled": False}})
+        console.print(f"[yellow]○ {argv[1]} disconnected[/] — Legacy will not read it")
+    elif cmd == "sync":
+        targets = [argv[1]] if len(argv) >= 2 and argv[1] in ("github", "leetcode") else [
+            n for n, c in sources.get_settings().items() if c["enabled"] and c["username"]]
+        if not targets:
+            console.print("[dim]no connected sources — try: legacy connect github <username>[/]")
+        for t in targets:
+            _sync_source(t)
+    elif cmd == "setup":
+        dst = installer.setup_claude_skill()
+        console.print(f"[green]✓ Claude Code skill installed[/] → {dst}")
+        console.print("[dim]every new Claude Code session can now reach your memory.[/]")
+        console.print("[dim]per-project wiring (Cursor + AGENTS.md): run [bold]legacy hook[/] inside a project.[/]")
+    elif cmd == "hook":
+        for f in installer.hook_project(Path.cwd()):
+            console.print(f"[green]✓[/] {f}")
+        console.print("[dim]this project's Cursor agent + AGENTS.md readers now know about Legacy.[/]")
     else:
-        console.print("usage: legacy [ask <q> | remember <text> | observe | learn | report]")
+        console.print(USAGE)
         sys.exit(1)
 
 

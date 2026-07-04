@@ -164,11 +164,20 @@ npm install
 npm run dev -- --port 5199    # → http://localhost:5199
 ```
 
-**4. The terminal agent**
+**4. The terminal agent — then go full mode**
 
 ```bash
-./legacy        # from the repo root — or from any git repo you're working in
+./legacy                                  # interactive: observes, primes, chats
+./legacy setup                            # install the Claude Code skill globally
+./legacy hook                             # run inside any project: wire Cursor + AGENTS.md
+./legacy connect github <username>        # opt a source in (login)
+./legacy connect leetcode <username>
+./legacy sync                             # pull verified evidence from all connected sources
+./legacy disconnect leetcode              # opt out (logout) — off means off
+./legacy sources                          # connection status
 ```
+
+The web app is optional — everything works from the CLI.
 
 **5. Connecting to an existing Cognee dataset?** Rebuild the local score
 ledger first: `cd backend && ../.venv/bin/python backfill_ledger.py`
