@@ -191,14 +191,36 @@ def main() -> None:
             (_remember if _route(line) == "R" else _answer)(line)
 
 
-USAGE = """usage: legacy <command>
+COMMANDS = [
+    ("", "interactive session — observes your workspace, primes from memory, asks its held question, then chat (statements are remembered, questions answered)"),
+    ("ask <question>", "answer a question from your memory graph (projects, goals, history)"),
+    ("remember <text>", "distill a fact/milestone into typed memory nodes and store it"),
+    ("observe", "record this repo's git state (branch, today's commits) as verified evidence"),
+    ("learn", "deep-study this project into memory — metadata only, never source code"),
+    ("report", "the full report: alignment, scores, contradictions, projection, open question"),
+    ("sources", "show evidence-source connections and status"),
+    ("connect github|leetcode <user>", "opt a source in (login) — its public activity becomes verified evidence"),
+    ("disconnect github|leetcode", "opt a source out (logout) — off means off, nothing is read"),
+    ("sync [source]", "pull new verified evidence from connected sources (deduped)"),
+    ("autocapture [on|off]", "auto-run observe when a Claude Code session ends (default off; consent flag)"),
+    ("setup", "full mode for this machine: Claude Code skill + MCP server registration"),
+    ("hook", "wire THIS project for Cursor + AGENTS.md agents"),
+    ("help", "this reference"),
+]
 
-  memory      ask <q> | remember <text> | observe | learn | report
-  sources     sources | connect github|leetcode <username> | disconnect <source> | sync [source]
-  install     setup   (wire Claude Code globally)
-              hook    (wire THIS project for Cursor + AGENTS.md agents)
 
-  no command  interactive session (observes workspace, primes, chats)"""
+def _help() -> None:
+    from rich.table import Table
+    t = Table(show_header=True, header_style="dim", border_style="dim", pad_edge=False)
+    t.add_column("command", style="cyan", no_wrap=True)
+    t.add_column("what it does")
+    for cmd_, desc in COMMANDS:
+        t.add_row(f"legacy {cmd_}".strip(), desc)
+    console.print(t)
+    console.print("[dim]memory lives in your Cognee graph — every command, every tool, one brain.[/]")
+
+
+USAGE = "usage: legacy <command> — run [bold]legacy help[/] for the full reference"
 
 
 def _print_sources() -> None:
@@ -271,6 +293,19 @@ def one_shot(argv: list[str]) -> None:
         for f in installer.hook_project(Path.cwd()):
             console.print(f"[green]✓[/] {f}")
         console.print("[dim]this project's Cursor agent + AGENTS.md readers now know about Legacy.[/]")
+    elif cmd == "autocapture":
+        state = argv[1] if len(argv) >= 2 and argv[1] in ("on", "off") else None
+        r = installer.autocapture(state)
+        if state == "on":
+            console.print("[green]● auto-capture ON[/] — when a Claude Code session ends, Legacy observes that workspace automatically")
+            if r["hook_newly_installed"]:
+                console.print("[dim]SessionEnd hook installed into ~/.claude/settings.json (backup saved).[/]")
+        elif state == "off":
+            console.print("[yellow]○ auto-capture OFF[/] — the hook stays installed but does nothing (consent flag removed)")
+        else:
+            console.print(f"auto-capture: {'[green]on[/]' if r['enabled'] else '[dim]off[/]'} · hook installed: {'yes' if r['hook_present'] else 'no'}")
+    elif cmd in ("help", "--help", "-h"):
+        _help()
     else:
         console.print(USAGE)
         sys.exit(1)

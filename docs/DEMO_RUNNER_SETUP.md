@@ -65,7 +65,9 @@ something fresh.
 ```bash
 ./legacy            # observes the repo, primes from memory, then chat
 ./legacy ask "what is this user working on?"
-./legacy setup      # installs the Claude Code skill on YOUR machine (path auto-adjusts)
+./legacy setup      # installs Claude Code skill + MCP server (paths auto-adjust)
+./legacy help       # full command reference
+./legacy autocapture on   # optional: auto-observe workspaces when Claude Code sessions end
 ```
 
 ## 6. Pre-recording checklist

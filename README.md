@@ -185,7 +185,26 @@ npm run dev -- --port 5199    # → http://localhost:5199
 ./legacy sources                          # connection status
 ```
 
-The web app is optional — everything works from the CLI.
+The web app is optional — everything works from the CLI. Full reference: `./legacy help`.
+
+| command | what it does |
+|---|---|
+| `legacy` | interactive session — observes your workspace, primes from memory, chats |
+| `legacy ask <q>` | answer from your memory graph |
+| `legacy remember <text>` | store a fact/milestone as typed memory |
+| `legacy observe` | record this repo's git state as verified evidence |
+| `legacy learn` | deep-study this project (metadata only, never source) |
+| `legacy report` | alignment score, consistency, contradictions, projection |
+| `legacy sources` / `connect` / `disconnect` / `sync` | opt-in evidence source management |
+| `legacy autocapture on\|off` | auto-observe the workspace when a Claude Code session ends (default off) |
+| `legacy setup` | full mode: Claude Code skill + MCP registration for this machine |
+| `legacy hook` | wire the current project for Cursor + AGENTS.md agents |
+
+**Auto-capture** (`legacy autocapture on`) closes the last manual step: a
+Claude Code `SessionEnd` hook fires when any session ends and runs
+`legacy observe` in that session's workspace — finish a project, close the
+chat, Legacy already knows. Consent-first like everything else: default off,
+one command to disable, and the hook reads only git metadata.
 
 **5. Connecting to an existing Cognee dataset?** Rebuild the local score
 ledger first: `cd backend && ../.venv/bin/python backfill_ledger.py`

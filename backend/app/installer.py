@@ -90,3 +90,53 @@ def setup_mcp() -> tuple[bool, str]:
         return out.returncode == 0, cmd
     except Exception:
         return False, cmd
+
+
+# ------------------------------------------------------------- autocapture
+FLAG = Path.home() / ".legacy" / "autocapture"
+HOOK_CMD = str(REPO_ROOT / "scripts" / "legacy_session_end.sh")
+SETTINGS = Path.home() / ".claude" / "settings.json"
+
+
+def _hook_installed(settings: dict) -> bool:
+    for entry in settings.get("hooks", {}).get("SessionEnd", []):
+        for h in entry.get("hooks", []):
+            if h.get("command") == HOOK_CMD:
+                return True
+    return False
+
+
+def install_autocapture_hook() -> bool:
+    """Merge our SessionEnd hook into ~/.claude/settings.json (backup first).
+    Returns True if newly installed, False if it was already there."""
+    import json
+    settings = {}
+    if SETTINGS.exists():
+        settings = json.loads(SETTINGS.read_text() or "{}")
+        SETTINGS.with_suffix(".json.legacy-bak").write_text(json.dumps(settings, indent=2))
+    if _hook_installed(settings):
+        return False
+    settings.setdefault("hooks", {}).setdefault("SessionEnd", []).append(
+        {"hooks": [{"type": "command", "command": HOOK_CMD}]}
+    )
+    SETTINGS.parent.mkdir(parents=True, exist_ok=True)
+    SETTINGS.write_text(json.dumps(settings, indent=2))
+    return True
+
+
+def autocapture(state: str | None = None) -> dict:
+    """on: install hook (once) + set flag. off: clear flag (hook stays, no-ops).
+    None: report status."""
+    import json
+    if state == "on":
+        newly = install_autocapture_hook()
+        FLAG.parent.mkdir(exist_ok=True)
+        FLAG.touch()
+        return {"enabled": True, "hook_newly_installed": newly}
+    if state == "off":
+        FLAG.unlink(missing_ok=True)
+        return {"enabled": False}
+    settings = {}
+    if SETTINGS.exists():
+        settings = json.loads(SETTINGS.read_text() or "{}")
+    return {"enabled": FLAG.exists(), "hook_present": _hook_installed(settings)}

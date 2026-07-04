@@ -13,6 +13,8 @@ graph explorer open in a second tab for the flyover shot.
 
 > "I didn't tell it anything. Watch." *(point at the ◉ observed line)* "It looked at my terminal, saw the repo, the branch, today's commits — and remembered. Then it told me what it already knows about me. And then — it asked me a question it's been holding."
 
+*Optional extra beat: "And this works everywhere I work — it's a native MCP tool in Claude Code and Cursor, it auto-observes when my coding sessions end, and `legacy help` shows the whole surface."*
+
 *If using this cold open, compress the next section to 0:20–0:40.*
 
 **[0:00 – 0:25] The problem**
