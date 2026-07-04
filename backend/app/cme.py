@@ -24,9 +24,12 @@ Node types and when to use them:
 - CLAIM: a self-assessment with no evidence attached ("I'm consistent with DSA"). confidence starts 0.3.
 - EVIDENCE: verifiable output (commit, certificate, submission, publication). confidence 0.9 if external, 0.5 if self-reported.
 - CONTRADICTION: user admits a gap between what they said and what they did ("I said daily DSA but haven't opened it in 3 weeks"). severity low|medium|high.
+- PREFERENCE: a durable like/dislike/choice ("my favourite bike is the Hunter 350", "I hate Java", "I prefer dark UIs"). confidence 0.8.
+- FACT: a durable personal fact or context ("I live in Chennai", "my campus placements start in September", "I ride to college daily"). confidence 0.8.
 
 Rules:
-- Vague statements with no commitment, action, claim, or evidence produce ZERO nodes.
+- Remember the PERSON, not just the goals: preferences, interests, and personal facts are first-class memory.
+- Pure filler with nothing durable (greetings, weather small-talk, "lol ok") produces ZERO nodes.
 - Never invent details. linked_goal is the user's goal the node relates to, or "" if none is clear.
 - text must be a single dense sentence in third person about "user shanks".
 - Use the reflection date provided for the date field."""
@@ -43,7 +46,7 @@ NODES_SCHEMA = {
                     "properties": {
                         "type": {
                             "type": "string",
-                            "enum": ["GOAL", "ACTION", "CLAIM", "EVIDENCE", "CONTRADICTION"],
+                            "enum": ["GOAL", "ACTION", "CLAIM", "EVIDENCE", "CONTRADICTION", "PREFERENCE", "FACT"],
                         },
                         "text": {"type": "string"},
                         "linked_goal": {"type": "string"},
@@ -107,4 +110,6 @@ def format_node_for_cognee(node: dict) -> str:
         parts.append("verified false. no supporting evidence linked yet.")
     if t == "GOAL":
         parts.append("status OPEN.")
+    if t in ("PREFERENCE", "FACT"):
+        parts.append("durable personal memory.")
     return " ".join(parts)

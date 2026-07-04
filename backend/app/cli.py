@@ -18,7 +18,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from . import cme, cognee_client, config, engines, installer, ledger, observer, project_learner, sources
+from . import chat, cme, cognee_client, config, engines, installer, ledger, observer, project_learner, sources
 
 console = Console()
 _claude = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
@@ -121,9 +121,11 @@ def _report() -> None:
         _ask_hypothesis(hyp)
 
 
-HELP = """[bold]legacy[/] — a mentor that remembers
+HELP = """[bold]legacy[/] — the AI that actually knows you
 
-Just type. Statements are remembered; questions are answered from memory.
+Just talk — analysis, advice, anything. Legacy chats like an assistant,
+reaches into your memory graph when your past matters, and quietly
+remembers the durable parts of every exchange.
 
   [cyan]/report[/]    the full report: scores, contradictions, projection
   [cyan]/observe[/]   re-scan this workspace (git) into memory
@@ -156,7 +158,9 @@ def main() -> None:
     for hyp in engines.pending_hypotheses():
         _ask_hypothesis(hyp)
 
-    console.print("[dim]type freely — /help for commands[/]\n")
+    console.print("[dim]talk to me — I remember. /help for commands[/]\n")
+
+    _chat_history: list[dict] = []
 
     # 4. The loop.
     while True:
@@ -167,6 +171,8 @@ def main() -> None:
         if not line:
             continue
         if line in ("/bye", "/exit", "/quit"):
+            with console.status("[dim]finishing memories…[/]"):
+                chat.wait_pending()
             console.print("[dim]the house always remembers.[/]")
             return
         if line == "/help":
@@ -188,11 +194,24 @@ def main() -> None:
         elif line.startswith("/"):
             console.print("[dim]unknown command — /help[/]")
         else:
-            (_remember if _route(line) == "R" else _answer)(line)
+            _chat_history.append({"role": "user", "content": line})
+            with console.status("[dim]thinking…[/]") as status:
+                reply = chat.converse(
+                    _chat_history,
+                    on_status=lambda s: status.update(f"[dim]{s}[/]"),
+                )
+            _chat_history.append({"role": "assistant", "content": reply})
+            del _chat_history[:-24]  # keep the running window bounded
+            console.print(Panel(Markdown(reply), border_style="dim", title="legacy", title_align="left"))
+            chat.remember_exchange_async(
+                line, reply,
+                on_done=lambda nodes: nodes and console.print(
+                    f"[dim]◆ remembered {len(nodes)} thing(s) from that[/]"),
+            )
 
 
 COMMANDS = [
-    ("", "interactive session — observes your workspace, primes from memory, asks its held question, then chat (statements are remembered, questions answered)"),
+    ("", "interactive chat — like ChatGPT, but it knows you: observes your workspace, primes from memory, converses about anything, and remembers what matters"),
     ("ask <question>", "answer a question from your memory graph (projects, goals, history)"),
     ("remember <text>", "distill a fact/milestone into typed memory nodes and store it"),
     ("observe", "record this repo's git state (branch, today's commits) as verified evidence"),

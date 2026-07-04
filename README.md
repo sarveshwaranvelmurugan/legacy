@@ -8,7 +8,7 @@
 
 Every AI resets. Every session starts at zero. You've told your chatbot your goals fifty times and it remembers none of them — it woke up in Vegas, again.
 
-**Legacy is a persistent life-trajectory agent.** It doesn't store your conversations — it builds a living knowledge graph of your evolving self on Cognee: your goals, actions, claims, evidence, and contradictions. Then it does the thing no journal, no chatbot, and no mentor-less student has ever had:
+**Legacy is the AI that actually knows you.** Chat with it like ChatGPT — analysis, advice, anything — and it remembers: your preferences, your facts, your projects, your work, across every session, forever. Close the chat, switch tools, come back next month — Legacy still knows your favourite bike, the app you shipped in June, and the goal you keep avoiding. It builds a living knowledge graph of you on Cognee, and on top of that memory it does the thing no chatbot has ever done:
 
 > **It catches you lying to yourself. With evidence. And it asks — never tells.**
 
@@ -23,7 +23,11 @@ Every AI resets. Every session starts at zero. You've told your chatbot your goa
 
 ## What it does
 
-You give Legacy a two-minute daily reflection. Legacy gives you back, over time:
+**Talk to it.** `./legacy` is a real conversation — ask it to analyze your new bike, plan a trip, review an idea. It answers like a capable assistant, reaches into your memory graph when your past matters, and quietly distills the durable parts of every exchange (preferences, facts, decisions) into permanent memory. Tell it about your bike today; ask "what's my favourite bike?" in a fresh session next week — it knows.
+
+**Work near it.** Your Claude Code sessions, git pushes, and LeetCode solves flow in as verified evidence (opt-in, always).
+
+**And over time, it gives you back what no AI ever has:**
 
 | | |
 |---|---|

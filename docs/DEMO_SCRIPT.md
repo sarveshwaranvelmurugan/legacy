@@ -13,6 +13,8 @@ graph explorer open in a second tab for the flyover shot.
 
 > "I didn't tell it anything. Watch." *(point at the ◉ observed line)* "It looked at my terminal, saw the repo, the branch, today's commits — and remembered. Then it told me what it already knows about me. And then — it asked me a question it's been holding."
 
+*Optional extra beat — the memory chat (very strong if time allows): in the terminal, type "what's my favourite bike?" — Legacy answers from a conversation held in a DIFFERENT session days ago. Line: "I told it about my bike once, in a chat that's long gone. Every other AI forgot. Legacy didn't — and it works like this across every tool I use: Claude Code, Cursor, this terminal. One memory."*
+
 *Optional extra beat: "And this works everywhere I work — it's a native MCP tool in Claude Code and Cursor, it auto-observes when my coding sessions end, and `legacy help` shows the whole surface."*
 
 *If using this cold open, compress the next section to 0:20–0:40.*
