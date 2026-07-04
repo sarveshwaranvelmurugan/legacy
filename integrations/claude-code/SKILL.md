@@ -1,6 +1,6 @@
 ---
 name: legacy
-description: Query or update the user's Legacy memory agent — a persistent knowledge graph of their projects, goals, actions, and history that survives across all Claude sessions. Use when the user asks what they were working on, about their past projects/goals/progress ("what was I doing last week?", "am I on track?", "what did I finish?"), when they announce completing a project or milestone (log it), or at the start of a task where knowing the user's current work context would help.
+description: Query or update the user's Legacy memory agent — a persistent knowledge graph of their projects, goals, actions, and history that survives across all Claude sessions. Use when the user references their past projects by name or pattern ("build it like app-a", "follow the pattern of my earlier apps", "combine the functionality of X and Y"), asks what they were working on or about their goals/progress, announces completing a project or milestone (log it + learn the repo), or at the start of a task where the user's prior work context would help.
 ---
 
 # Legacy — the user's persistent memory agent
@@ -23,14 +23,22 @@ The CLI lives at `/Users/sarveshwaran/hangover/legacy` and works from any cwd:
 # OBSERVE — record the current repo's git state as verified evidence
 # (run from inside the project directory being discussed)
 /Users/sarveshwaran/hangover/legacy observe
+
+# LEARN — deep-study a project's stack/architecture/features/patterns into
+# memory (metadata only: README, manifests, tree, commit messages — no source).
+# Run from inside the project directory. Do this when a project is finished.
+/Users/sarveshwaran/hangover/legacy learn
 ```
 
 ## When to use which
 
+- User says "build it like <project>" / "follow the pattern of my apps A and B" →
+  `ask` Legacy to describe those projects' stacks, architectures, features and
+  patterns, then use that answer as the design basis for the new work.
 - User asks about their own past/progress/goals → `ask`, then answer from the output.
-- User says they finished/started/decided something notable → `remember` it
-  (one dense sentence, third person is fine), and ALSO run `observe` from that
-  project's directory if it is a git repo — commits are verified evidence.
+- User says they finished/started/decided something notable → `remember` it,
+  and if it's a project in a git repo, also run `observe` + `learn` from that
+  project's directory so the project's patterns enter memory.
 - Starting substantial work in a repo → optionally `observe` so Legacy tracks it.
 
 ## Notes

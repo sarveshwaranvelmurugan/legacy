@@ -63,7 +63,14 @@ and every new Claude Code session can reach your memory:
 - you tell it *"I finished the project"* → Claude logs it via `legacy remember …`
   and records the repo's git state as verified evidence via `legacy observe`
 
-One-shot commands (`legacy ask | remember | observe | report`) make Legacy a
+- you finish a project → `legacy learn` deep-studies it (metadata only: README,
+  manifests, tree, commits — never source bodies) into PROJECT knowledge nodes
+- weeks later, in a new session: *"build a new app following the patterns of
+  app-a and app-b, combining both"* → Legacy returns each project's stack,
+  architecture, features and patterns, plus a combined-build recommendation
+  grounded in what you actually built
+
+One-shot commands (`legacy ask | remember | observe | learn | report`) make Legacy a
 memory layer any tool can call — your coding agent is amnesiac; your memory agent isn't.
 
 ## Why it's an agent, not an app

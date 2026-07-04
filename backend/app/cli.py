@@ -18,7 +18,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from . import cme, cognee_client, config, engines, ledger, observer
+from . import cme, cognee_client, config, engines, ledger, observer, project_learner
 
 console = Console()
 _claude = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
@@ -122,6 +122,7 @@ Just type. Statements are remembered; questions are answered from memory.
 
   [cyan]/report[/]    the full report: scores, contradictions, projection
   [cyan]/observe[/]   re-scan this workspace (git) into memory
+  [cyan]/learn[/]     deep-study this project (metadata only) into memory
   [cyan]/ask …[/]     force a question   [cyan]/remember …[/]  force a memory
   [cyan]/bye[/]       leave (Legacy keeps remembering)"""
 
@@ -167,6 +168,10 @@ def main() -> None:
             console.print(Panel(HELP, border_style="dim"))
         elif line == "/report":
             _report()
+        elif line == "/learn":
+            with console.status("[dim]studying this project (metadata only)…[/]"):
+                result = project_learner.learn(Path.cwd())
+            console.print(f"[green]✓ learned '{result['name']}' — {result['nodes']} knowledge nodes remembered[/]")
         elif line == "/observe":
             with console.status("[dim]looking around…[/]"):
                 seen = observer.look(Path.cwd())
@@ -193,13 +198,19 @@ def one_shot(argv: list[str]) -> None:
         _answer(rest)
     elif cmd == "remember" and rest:
         _remember(rest)
+    elif cmd == "learn":
+        with console.status("[dim]studying this project (metadata only)…[/]"):
+            result = project_learner.learn(Path.cwd())
+        console.print(f"[green]✓ learned '{result['name']}' — {result['nodes']} knowledge nodes remembered[/]")
+        console.print(f"  [dim]stack:[/] {result['knowledge']['stack'][:100]}")
+        console.print(f"  [dim]patterns:[/] {result['knowledge']['patterns'][:100]}")
     elif cmd == "observe":
         seen = observer.look(Path.cwd())
         console.print(seen["summary"] if seen else "not a git repository — nothing to observe")
     elif cmd == "report":
         _report()
     else:
-        console.print("usage: legacy [ask <q> | remember <text> | observe | report]")
+        console.print("usage: legacy [ask <q> | remember <text> | observe | learn | report]")
         sys.exit(1)
 
 
