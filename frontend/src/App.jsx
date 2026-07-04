@@ -1,7 +1,29 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { marked } from 'marked'
+import ForceGraph2D from 'react-force-graph-2d'
 
 const API = '/api'
+
+// fetch wrapper: every failure surfaces as a readable error, never a hang
+async function api(path, opts = {}) {
+  let res
+  try {
+    res = await fetch(`${API}${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts,
+    })
+  } catch {
+    throw new Error('Cannot reach the Legacy backend — is it running on :8400?')
+  }
+  let body
+  try {
+    body = await res.json()
+  } catch {
+    throw new Error(`Backend returned an unreadable response (HTTP ${res.status}).`)
+  }
+  if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`)
+  return body
+}
 
 const NODE_STYLES = {
   GOAL: 'bg-emerald-950/60 text-emerald-300 border-emerald-800',
@@ -9,11 +31,34 @@ const NODE_STYLES = {
   CLAIM: 'bg-amber-950/60 text-amber-300 border-amber-800',
   EVIDENCE: 'bg-teal-950/60 text-teal-300 border-teal-800',
   CONTRADICTION: 'bg-rose-950/60 text-rose-300 border-rose-800',
+  PROJECT: 'bg-sky-950/60 text-sky-300 border-sky-800',
 }
 
 function Markdown({ text }) {
   if (!text) return null
   return <div className="md text-sm text-[#b8b4ab]" dangerouslySetInnerHTML={{ __html: marked.parse(text) }} />
+}
+
+function ErrorNote({ error, onRetry }) {
+  if (!error) return null
+  return (
+    <div className="border border-rose-900 bg-rose-950/40 rounded-lg px-4 py-3 text-sm text-rose-300 flex items-center justify-between gap-3">
+      <span>{String(error.message || error)}</span>
+      {onRetry && (
+        <button onClick={onRetry} className="text-xs underline shrink-0 hover:text-white">retry</button>
+      )}
+    </div>
+  )
+}
+
+function Skeleton({ lines = 4 }) {
+  return (
+    <div className="space-y-2 animate-pulse">
+      {Array.from({ length: lines }).map((_, i) => (
+        <div key={i} className="h-3 rounded bg-[#1e2028]" style={{ width: `${90 - i * 12}%` }} />
+      ))}
+    </div>
+  )
 }
 
 function Section({ title, kicker, children }) {
@@ -26,21 +71,106 @@ function Section({ title, kicker, children }) {
   )
 }
 
+/* ----------------------------- evidence sources ---------------------------- */
+
+function SourceRow({ id, label, hint, cfg, onChange, onSync, busy }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 py-2">
+      <button
+        onClick={() => onChange({ ...cfg, enabled: !cfg.enabled })}
+        className={`relative w-9 h-5 rounded-full transition shrink-0 ${cfg.enabled ? 'bg-emerald-600' : 'bg-[#2a2c34]'}`}
+        title={cfg.enabled ? 'on — Legacy may sync this source' : 'off — Legacy will not touch this source'}
+      >
+        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${cfg.enabled ? 'left-[18px]' : 'left-0.5'}`} />
+      </button>
+      <span className="text-sm text-[#d7d3cb] w-20">{label}</span>
+      <input
+        value={cfg.username}
+        onChange={(e) => onChange({ ...cfg, enabled: cfg.enabled, username: e.target.value })}
+        placeholder={hint}
+        className="flex-1 min-w-40 bg-[#0d0e12] border border-[#2a2c34] rounded-md px-3 py-1.5 text-xs text-[#d7d3cb] placeholder-[#565a68] focus:outline-none"
+      />
+      <button
+        onClick={() => onSync(id)}
+        disabled={!cfg.enabled || !cfg.username || busy}
+        className="px-3 py-1.5 rounded-md border border-[#2a2c34] text-xs text-[#d7d3cb] hover:border-[#4a4e5e] hover:bg-[#1a1c22] disabled:opacity-30 transition"
+      >
+        {busy ? 'syncing…' : 'Sync'}
+      </button>
+    </div>
+  )
+}
+
+function SourcesPanel() {
+  const [settings, setSettings] = useState(null)
+  const [busy, setBusy] = useState(null)
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    api('/sources').then(setSettings).catch(setError)
+  }, [])
+
+  const save = async (source, cfg) => {
+    setError(null)
+    const next = { ...settings, [source]: { ...settings[source], ...cfg } }
+    setSettings(next)
+    try {
+      await api('/sources', { method: 'POST', body: JSON.stringify({ [source]: cfg }) })
+    } catch (e) { setError(e) }
+  }
+
+  const sync = async (source) => {
+    setBusy(source); setResult(null); setError(null)
+    try {
+      const r = await api(`/sources/${source}/sync`, { method: 'POST' })
+      if (r.error) setError(new Error(r.error))
+      else setResult({ source, ...r })
+    } catch (e) { setError(e) }
+    setBusy(null)
+  }
+
+  if (!settings) return null
+  return (
+    <Section kicker="zero-trust · opt-in" title="Evidence Sources">
+      <p className="text-xs text-[#6b6f80] mb-2">
+        Claims are cheap. When a source is on, Legacy pulls your real public activity
+        as verified evidence (confidence 0.9). Off means off — nothing is read.
+      </p>
+      <SourceRow id="github" label="GitHub" hint="github username" cfg={settings.github}
+        onChange={(cfg) => save('github', cfg)} onSync={sync} busy={busy === 'github'} />
+      <SourceRow id="leetcode" label="LeetCode" hint="leetcode username" cfg={settings.leetcode}
+        onChange={(cfg) => save('leetcode', cfg)} onSync={sync} busy={busy === 'leetcode'} />
+      <ErrorNote error={error} />
+      {result && (
+        <div className="mt-2 border border-teal-900 bg-teal-950/30 rounded-lg px-3 py-2">
+          <div className="text-xs text-teal-300 mb-1">
+            {result.synced} verified evidence node(s) synced from {result.source}
+            {result.synced === 0 && ' — nothing new since last sync'}
+          </div>
+          {(result.evidence || []).map((s, i) => (
+            <div key={i} className="text-[11px] font-mono text-[#8b8fa3] truncate">{s}</div>
+          ))}
+        </div>
+      )}
+    </Section>
+  )
+}
+
+/* --------------------------------- reflect -------------------------------- */
+
 function ReflectScreen() {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
 
   const submit = async () => {
-    if (!text.trim()) return
-    setBusy(true)
-    setResult(null)
-    const res = await fetch(`${API}/reflect`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    })
-    setResult(await res.json())
+    if (!text.trim() || busy) return
+    setBusy(true); setResult(null); setError(null)
+    try {
+      setResult(await api('/reflect', { method: 'POST', body: JSON.stringify({ text }) }))
+    } catch (e) { setError(e) }
     setBusy(false)
   }
 
@@ -61,6 +191,7 @@ function ReflectScreen() {
         >
           {busy ? 'Distilling…' : 'Remember this'}
         </button>
+        <div className="mt-3"><ErrorNote error={error} onRetry={submit} /></div>
       </Section>
 
       {result && (
@@ -87,26 +218,29 @@ function ReflectScreen() {
           )}
         </Section>
       )}
+
+      <SourcesPanel />
     </div>
   )
 }
 
-function HypothesisCard({ hyp, onResponded }) {
+/* -------------------------------- hypotheses ------------------------------- */
+
+function HypothesisCard({ hyp }) {
   const [context, setContext] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(null)
+  const [error, setError] = useState(null)
 
   const respond = async (response) => {
-    setBusy(true)
-    const res = await fetch(`${API}/hypothesis/respond`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: hyp.id, response, context }),
-    })
-    const updated = await res.json()
-    setDone(updated)
+    setBusy(true); setError(null)
+    try {
+      setDone(await api('/hypothesis/respond', {
+        method: 'POST',
+        body: JSON.stringify({ id: hyp.id, response, context }),
+      }))
+    } catch (e) { setError(e) }
     setBusy(false)
-    onResponded?.(updated)
   }
 
   if (done) {
@@ -146,6 +280,46 @@ function HypothesisCard({ hyp, onResponded }) {
           </button>
         ))}
       </div>
+      <ErrorNote error={error} />
+    </div>
+  )
+}
+
+/* ---------------------------------- report --------------------------------- */
+
+function CloseGoal() {
+  const [goal, setGoal] = useState('')
+  const [reason, setReason] = useState('')
+  const [done, setDone] = useState(false)
+  const [error, setError] = useState(null)
+
+  const close = async () => {
+    if (!goal.trim()) return
+    setError(null)
+    try {
+      await api('/goal/close', { method: 'POST', body: JSON.stringify({ goal, reason }) })
+      setDone(true)
+    } catch (e) { setError(e) }
+  }
+
+  if (done) {
+    return <p className="text-sm text-[#8b8fa3]">Recorded. The graph remembers that you moved on — and why.</p>
+  }
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-[#6b6f80]">
+        Abandoning a goal on purpose is not failure — it's data. cognee.forget() records the closure instead of pretending it never existed.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <input value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="goal to close"
+          className="flex-1 min-w-40 bg-[#0d0e12] border border-[#2a2c34] rounded-md px-3 py-2 text-xs text-[#d7d3cb] placeholder-[#565a68] focus:outline-none" />
+        <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="why you're letting it go"
+          className="flex-[2] min-w-52 bg-[#0d0e12] border border-[#2a2c34] rounded-md px-3 py-2 text-xs text-[#d7d3cb] placeholder-[#565a68] focus:outline-none" />
+        <button onClick={close} className="px-3 py-2 rounded-md border border-[#2a2c34] text-xs text-[#d7d3cb] hover:border-[#4a4e5e] transition">
+          Close goal
+        </button>
+      </div>
+      <ErrorNote error={error} />
     </div>
   )
 }
@@ -156,22 +330,31 @@ function ReportScreen() {
   const [error, setError] = useState(null)
 
   const generate = async () => {
-    setBusy(true)
-    setError(null)
+    setBusy(true); setError(null)
     try {
-      const res = await fetch(`${API}/report`)
-      if (!res.ok) throw new Error(await res.text())
-      setReport(await res.json())
-    } catch (e) {
-      setError(String(e))
-    }
+      setReport(await api('/report'))
+    } catch (e) { setError(e) }
     setBusy(false)
   }
 
   const newHypothesis = async () => {
-    setBusy(true)
-    await fetch(`${API}/hypothesis/generate`, { method: 'POST' })
-    await generate()
+    setBusy(true); setError(null)
+    try {
+      await api('/hypothesis/generate', { method: 'POST' })
+      setReport(await api('/report'))
+    } catch (e) { setError(e) }
+    setBusy(false)
+  }
+
+  if (busy && !report) {
+    return (
+      <div className="space-y-5">
+        <p className="text-center text-xs text-[#6b6f80] font-mono pt-4">four engines are traversing your knowledge graph (~30s)…</p>
+        {['engine 2 · consistency', 'engine 1 · contradictions', 'engine 3 · inference', 'engine 4 · projection'].map((k) => (
+          <Section key={k} kicker={k} title=" "><Skeleton /></Section>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -187,9 +370,9 @@ function ReportScreen() {
             disabled={busy}
             className="px-6 py-2.5 rounded-lg bg-[#f0ede6] text-[#0d0e12] text-sm font-medium hover:bg-white disabled:opacity-40 transition"
           >
-            {busy ? 'Traversing the graph… (30–60s)' : 'Generate 30-Day Report'}
+            Generate 30-Day Report
           </button>
-          {error && <p className="text-rose-400 text-xs mt-4">{error}</p>}
+          <div className="max-w-md mx-auto mt-4"><ErrorNote error={error} onRetry={generate} /></div>
         </div>
       )}
 
@@ -201,13 +384,14 @@ function ReportScreen() {
               {busy ? 'refreshing…' : '↻ regenerate'}
             </button>
           </div>
+          <ErrorNote error={error} onRetry={generate} />
 
-          <Section kicker="engine 2 · recall() + arithmetic" title="Goal Consistency">
-            <Markdown text={report.consistency} />
+          <Section kicker="engine 2 · deterministic ledger arithmetic" title="Goal Consistency">
+            {busy ? <Skeleton /> : <Markdown text={report.consistency} />}
           </Section>
 
           <Section kicker="engine 1 · multi-hop graph traversal" title="Unverified Claims & Contradictions">
-            <Markdown text={report.contradictions} />
+            {busy ? <Skeleton /> : <Markdown text={report.contradictions} />}
           </Section>
 
           <Section kicker="engine 3 · behavioral inference — asks, never tells" title="Hypotheses Awaiting Your Response">
@@ -218,15 +402,13 @@ function ReportScreen() {
               </div>
             ) : (
               <div className="space-y-3">
-                {report.hypotheses.map((h) => (
-                  <HypothesisCard key={h.id} hyp={h} />
-                ))}
+                {report.hypotheses.map((h) => <HypothesisCard key={h.id} hyp={h} />)}
               </div>
             )}
           </Section>
 
           <Section kicker="engine 4 · trajectory projection" title="Your Next Year, At This Pace">
-            <Markdown text={report.projection} />
+            {busy ? <Skeleton /> : <Markdown text={report.projection} />}
           </Section>
 
           <Section kicker="legacy asks" title="The Question You're Avoiding">
@@ -234,11 +416,111 @@ function ReportScreen() {
               {report.open_question}
             </p>
           </Section>
+
+          <Section kicker="cognee.forget() · conscious closure" title="Let a Goal Go">
+            <CloseGoal />
+          </Section>
         </>
       )}
     </div>
   )
 }
+
+/* ---------------------------------- graph ---------------------------------- */
+
+const GRAPH_COLORS = {
+  Entity: '#34d399',
+  EntityType: '#818cf8',
+  TextSummary: '#565a68',
+  DocumentChunk: '#3f424e',
+  TextDocument: '#8b6f47',
+  NodeSet: '#f59e0b',
+}
+
+function GraphScreen() {
+  const [data, setData] = useState(null)
+  const [error, setError] = useState(null)
+  const [stats, setStats] = useState(null)
+  const ref = useRef()
+
+  useEffect(() => {
+    api('/graph')
+      .then((g) => {
+        const nodes = g.nodes.map((n) => ({
+          id: n.id,
+          type: n.type,
+          name: (n.properties?.text || n.properties?.name || n.label || '').slice(0, 180),
+        }))
+        const ids = new Set(nodes.map((n) => n.id))
+        const links = g.edges
+          .filter((e) => ids.has(e.source) && ids.has(e.target))
+          .map((e) => ({ source: e.source, target: e.target, label: e.label }))
+        setData({ nodes, links })
+        setStats({ nodes: nodes.length, links: links.length })
+      })
+      .catch(setError)
+  }, [])
+
+  const paint = useCallback((node, ctx, scale) => {
+    const color = GRAPH_COLORS[node.type] || '#d7d3cb'
+    const r = node.type === 'Entity' ? 4 : 2.5
+    ctx.beginPath()
+    ctx.arc(node.x, node.y, r, 0, 2 * Math.PI)
+    ctx.fillStyle = color
+    ctx.fill()
+    if (scale > 2.2 && node.type === 'Entity') {
+      ctx.font = `${10 / scale * 2}px monospace`
+      ctx.fillStyle = '#8b8fa3'
+      ctx.fillText(node.name.slice(0, 28), node.x + 5, node.y + 2)
+    }
+  }, [])
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-[#8b8fa3]">
+          Your memory is not a chat log. This is the actual Cognee knowledge graph of who you're becoming.
+        </p>
+        {stats && <span className="text-xs font-mono text-[#6b6f80] shrink-0 ml-3">{stats.nodes} nodes · {stats.links} edges</span>}
+      </div>
+      <div className="flex gap-4 text-[11px] font-mono text-[#6b6f80]">
+        <span><span style={{ color: GRAPH_COLORS.Entity }}>●</span> entity</span>
+        <span><span style={{ color: GRAPH_COLORS.EntityType }}>●</span> type</span>
+        <span><span style={{ color: GRAPH_COLORS.TextSummary }}>●</span> summary</span>
+        <span><span style={{ color: GRAPH_COLORS.TextDocument }}>●</span> memory string</span>
+      </div>
+      <ErrorNote error={error} />
+      <div className="border border-[#23252d] rounded-xl overflow-hidden bg-[#0a0b0e]" style={{ height: 560 }}>
+        {!data && !error && <div className="p-5"><Skeleton lines={6} /></div>}
+        {data && (
+          <ForceGraph2D
+            ref={ref}
+            graphData={data}
+            width={Math.min(928, window.innerWidth - 60)}
+            height={560}
+            backgroundColor="#0a0b0e"
+            nodeCanvasObject={paint}
+            nodePointerAreaPaint={(node, color, ctx) => {
+              ctx.beginPath(); ctx.arc(node.x, node.y, 6, 0, 2 * Math.PI)
+              ctx.fillStyle = color; ctx.fill()
+            }}
+            nodeLabel={(n) => `<div style="max-width:340px;font-size:11px">${n.type}: ${n.name}</div>`}
+            linkColor={() => 'rgba(120,125,145,0.18)'}
+            linkWidth={0.5}
+            cooldownTicks={120}
+            onEngineStop={() => ref.current?.zoomToFit(400, 40)}
+          />
+        )}
+      </div>
+      <p className="text-xs text-[#6b6f80]">
+        Zoom in to read entity names. Green entities are the people, goals, problems and projects
+        Cognee extracted; every reflection you write grows this graph.
+      </p>
+    </div>
+  )
+}
+
+/* ----------------------------------- app ----------------------------------- */
 
 export default function App() {
   const [tab, setTab] = useState('reflect')
@@ -256,7 +538,7 @@ export default function App() {
           Are you becoming who you said you wanted to be?
         </p>
         <nav className="flex gap-1 mt-6 border-b border-[#23252d]">
-          {[['reflect', 'Reflect'], ['report', '30-Day Report']].map(([id, label]) => (
+          {[['reflect', 'Reflect'], ['report', '30-Day Report'], ['graph', 'Memory Graph']].map(([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -272,7 +554,9 @@ export default function App() {
         </nav>
       </header>
 
-      {tab === 'reflect' ? <ReflectScreen /> : <ReportScreen />}
+      {tab === 'reflect' && <ReflectScreen />}
+      {tab === 'report' && <ReportScreen />}
+      {tab === 'graph' && <GraphScreen />}
 
       <footer className="mt-14 text-center text-[11px] text-[#3f424e] font-mono">
         the house always remembers · built on cognee remember / recall / forget

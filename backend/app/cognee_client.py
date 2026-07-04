@@ -25,16 +25,25 @@ _client = httpx.Client(
 def remember(memory_strings: list[str], dataset: str = config.DATASET_NAME) -> dict:
     """Ingest compact CME node strings and build the knowledge graph."""
     from . import ledger
+    # de-dupe within the batch; Cognee 409s on identical duplicate documents
+    memory_strings = list(dict.fromkeys(memory_strings))
     for s in memory_strings:
         ledger.append(s)
-    r = _client.post(
-        "/api/v1/add_text",
-        json={
-            "textData": memory_strings,
-            "datasetName": dataset,
-            "nodeSet": config.NODE_SET,
-        },
-    )
+    r = None
+    for attempt in range(3):
+        r = _client.post(
+            "/api/v1/add_text",
+            json={
+                "textData": memory_strings,
+                "datasetName": dataset,
+                "nodeSet": config.NODE_SET,
+            },
+        )
+        if r.status_code != 409:
+            break
+        # 409 = dataset busy with a previous cognify — wait it out and retry
+        wait_for_processing(timeout_s=120)
+        time.sleep(2 * (attempt + 1))
     r.raise_for_status()
     ingest = r.json()
 

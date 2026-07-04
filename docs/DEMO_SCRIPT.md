@@ -29,7 +29,15 @@ graph explorer open in a second tab for the flyover shot.
 
 *Point at the amber "Legacy noticed a pattern forming" line.*
 
-**[1:00 – 2:05] The 30-Day Report**
+**Transparency note (say it, judges respect it):** "The June history you'll see is a seeded simulation of a student's month — but the evidence sync is live and real: my actual GitHub pushes and LeetCode solves, pulled on stage."
+
+**[0:55 – 1:10] The receipts — Sync Evidence (NEW)**
+
+*On the Reflect tab, scroll to Evidence Sources. Flip the LeetCode toggle ON.*
+
+> "Legacy doesn't trust claims — including mine. Evidence sources are opt-in: when I flip this switch, Legacy may pull my real public activity. Watch." *Click Sync on GitHub, then LeetCode.* "Real commits, real accepted solves, timestamped, straight into the graph as verified evidence — confidence zero-point-nine, versus zero-point-three for anything I merely claim. You can't lie to this thing about shipping code."
+
+**[1:10 – 2:05] The 30-Day Report**
 
 *Switch tabs, click Generate (pre-warm before recording so you can cut the wait).*
 
@@ -51,7 +59,7 @@ graph explorer open in a second tab for the flyover shot.
 
 **[2:40 – 3:00] The kicker**
 
-*Cut to the Cognee graph explorer flyover.*
+*Switch to the Memory Graph tab — the in-app force-graph of the actual Cognee knowledge graph. Zoom in slowly on the green entity cluster.*
 
 > "Every ambitious person without a mentor is generating data about their trajectory that nobody reads — including them. Legacy reads it. Cognee remembers it. And every week it asks: are you becoming who you said you wanted to be? The house always remembers. Now, so do you."
 

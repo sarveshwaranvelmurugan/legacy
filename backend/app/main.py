@@ -15,11 +15,23 @@ from datetime import date
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import cme, cognee_client, config, engines
+from . import cme, cognee_client, config, engines, sources
 
-app = FastAPI(title="Legacy", version="0.1.0")
+app = FastAPI(title="Legacy", version="0.2.0")
+
+
+@app.exception_handler(Exception)
+async def unhandled_error(request, exc):
+    """A crash must never hang the UI — always answer with clean JSON."""
+    return JSONResponse(status_code=502, content={
+        "detail": f"{type(exc).__name__}: {exc}",
+        "hint": "An upstream service (Anthropic/Cognee) may be slow or unreachable — try again.",
+    })
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -112,6 +124,31 @@ def close_goal(gc: GoalClosure):
     )
     cognee_client.remember([closure])
     return {"closed": gc.goal, "recorded": closure}
+
+
+class SourcePatch(BaseModel):
+    github: dict | None = None
+    leetcode: dict | None = None
+
+
+@app.get("/sources")
+def get_sources():
+    return sources.get_settings()
+
+
+@app.post("/sources")
+def set_sources(patch: SourcePatch):
+    return sources.update_settings({k: v for k, v in patch.model_dump().items() if v})
+
+
+@app.post("/sources/github/sync")
+def github_sync():
+    return sources.sync_github()
+
+
+@app.post("/sources/leetcode/sync")
+def leetcode_sync():
+    return sources.sync_leetcode()
 
 
 @app.get("/graph")
