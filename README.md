@@ -147,7 +147,7 @@ the Anthropic console — the CME runs on Haiku 4.5 and costs ~$0.003 per reflec
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install anthropic httpx python-dotenv fastapi 'uvicorn[standard]' rich
+.venv/bin/pip install -r backend/requirements.txt
 cd backend
 ../.venv/bin/uvicorn app.main:app --port 8400 --reload
 ```
@@ -168,7 +168,11 @@ npm run dev -- --port 5199    # → http://localhost:5199
 ./legacy        # from the repo root — or from any git repo you're working in
 ```
 
-**5. (Recommended) Seed the 30-day demo history**
+**5. Connecting to an existing Cognee dataset?** Rebuild the local score
+ledger first: `cd backend && ../.venv/bin/python backfill_ledger.py`
+(recording the demo? full runbook: [docs/DEMO_RUNNER_SETUP.md](docs/DEMO_RUNNER_SETUP.md))
+
+**6. (Recommended) Seed the 30-day demo history**
 
 A fresh graph is empty — the report engines need behavior to reason about.
 This ingests 16 realistic backdated reflections (~16 Haiku calls, ≈5¢) and
