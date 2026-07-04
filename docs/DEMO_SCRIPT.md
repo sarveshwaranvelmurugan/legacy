@@ -1,79 +1,163 @@
-# Legacy — 3-Minute Demo Script
+# Legacy — Demo Script (final product, July 5)
 
-Record at http://localhost:5199 with both servers running. Practice once before recording.
-Before recording: verify the Report tab has ONE pending hypothesis (if not, run
-`curl -X POST http://localhost:8400/hypothesis/generate`). Keep the Cognee dashboard
-graph explorer open in a second tab for the flyover shot.
+Two cuts from the same beats: the **3-minute video** (beats 1–6, tight) and the
+**extended live demo** (all beats, ~6 min) for judges who ask for more.
+SAY lines are written to be spoken verbatim; tweak to your voice.
+
+---
+
+## Pre-flight checklist (do ALL of this before recording)
+
+- [ ] `git pull` · backend on :8400 · frontend on :5199 · `curl localhost:8400/health`
+- [ ] Fresh clone? `cd backend && ../.venv/bin/python backfill_ledger.py`
+- [ ] Connect YOUR sources: `./legacy connect github <user>` + `./legacy connect leetcode <user>` + `./legacy sync`
+- [ ] Solve one easy LeetCode problem within 24h of recording (fresh receipt on camera)
+- [ ] One pending hypothesis exists: `curl -X POST localhost:8400/hypothesis/generate`
+- [ ] Pre-generate the report once (first gen ~30s; regenerate is faster — cut waits in edit)
+- [ ] Tell Legacy something personal in chat the DAY BEFORE (e.g., your bike/hobby) so cross-session recall is real on camera
+- [ ] Have vanilla ChatGPT open in a second browser window (beat 1)
+- [ ] Terminal font large, app at ~110% zoom, notifications off
+
+**Transparency line — say it once, judges respect it enormously:**
+> "Full disclosure: the June history in this graph is a seeded simulation of a
+> student's month. Everything I sync and do on camera — commits, solves, chat —
+> is live and real."
 
 ---
 
-**[0:00 – 0:20] Cold open — the terminal (optional but strong)**
+## Beat 1 — The split-screen kill shot (0:00–0:20)
 
-*Screen: a terminal. Run `./legacy` inside the project.*
+*Screen: ChatGPT left, Legacy Chat tab right. Type the same question into both:
+"what's my favourite bike?"*
 
-> "I didn't tell it anything. Watch." *(point at the ◉ observed line)* "It looked at my terminal, saw the repo, the branch, today's commits — and remembered. Then it told me what it already knows about me. And then — it asked me a question it's been holding."
+**SAY:** "Same question, two AIs. ChatGPT — an AI I've used for years — has no
+idea. Legacy answers with the model, when I bought it, and what I use it for…
+because I mentioned it once, in a different session, days ago. Every AI you've
+ever used woke up this morning with amnesia. This one didn't."
 
-*Optional extra beat — the memory chat (very strong if time allows): in the terminal, type "what's my favourite bike?" — Legacy answers from a conversation held in a DIFFERENT session days ago. Line: "I told it about my bike once, in a chat that's long gone. Every other AI forgot. Legacy didn't — and it works like this across every tool I use: Claude Code, Cursor, this terminal. One memory."*
+*Note: let ChatGPT's shrug sit on screen for a full second before reading
+Legacy's answer. The silence is the pitch.*
 
-*Optional extra beat: "And this works everywhere I work — it's a native MCP tool in Claude Code and Cursor, it auto-observes when my coding sessions end, and `legacy help` shows the whole surface."*
+## Beat 2 — The terminal agent: it looks around (0:20–0:50)
 
-*If using this cold open, compress the next section to 0:20–0:40.*
+*Screen: terminal in the project repo. Run `./legacy`.*
 
-**[0:00 – 0:25] The problem**
+**SAY:** "Legacy isn't an app you visit — it lives where I work. Watch what
+happens when I open it in a repo. I haven't typed anything." *(point at the
+◉ observed line)* "It looked around: repo, branch, today's commits — remembered
+as verified evidence, because git history doesn't lie. Then it tells me what it
+already knows about me. And here — it's been holding a question for me. I don't
+prompt my AI. My AI prompts me."
 
-> "Your AI woke up in Vegas with no memory of last night — that's every chatbot, every session. You've told it your goals fifty times; it remembers none of them. This is Legacy. It doesn't just remember what you said. It tracks who you're trying to become — and tells you, honestly, when you're drifting."
+*(Answer the hypothesis with `p` for partial + one line of context; point at the
+confidence shifting.)*
 
-*Show the app header: "Are you becoming who you said you wanted to be?"*
+**SAY:** "I pushed back — and the memory recalibrated. Legacy gets more accurate
+every time you argue with it."
 
-**[0:25 – 1:00] The input — watch the distillation**
+## Beat 3 — Profile + consent (0:50–1:20)
 
-*Type into Reflect:* "I've been meaning to study system design but haven't started. I did two hackathon sessions this week though, and pushed a big commit."
+*Screen: web app → Profile tab.*
 
-> "Every day: two minutes of honesty. Legacy's Compact Memory Engine distills raw text into typed, confidence-scored nodes before Cognee ever sees it — watch: one CONTRADICTION, two ACTIONs. Not chat history. Signal. And notice — Legacy itself just decided a pattern is forming. It will have a question for me."
+**SAY:** "This is what it knows: who I am, my preferences, my projects, my
+strengths — and my weak spots, with dates and counts, straight from the graph.
+No other AI can show you this page, because no other AI has receipts."
 
-*Point at the amber "Legacy noticed a pattern forming" line.*
+*Scroll to Evidence Sources. Flip LeetCode ON, hit Sync — a fresh solve lands.*
 
-**Transparency note (say it, judges respect it):** "The June history you'll see is a seeded simulation of a student's month — but the evidence sync is live and real: my actual GitHub pushes and LeetCode solves, pulled on stage."
+**SAY:** "And here's the trust model: evidence sources are switches I control.
+When it's on, Legacy pulls my real public activity — that's the LeetCode problem
+I solved this morning, timestamped, entering memory as verified evidence at 0.9
+confidence. My unproven claims sit at 0.3. The graph knows the difference between
+what I say and what I do. And off means off — nothing is read."
 
-**[0:55 – 1:10] The receipts — Sync Evidence (NEW)**
+## Beat 4 — Quests: a game you can't cheat (1:20–2:00)
 
-*On the Reflect tab, scroll to Evidence Sources. Flip the LeetCode toggle ON.*
+*Screen: Quests tab. Let the journey chart draw in.*
 
-> "Legacy doesn't trust claims — including mine. Evidence sources are opt-in: when I flip this switch, Legacy may pull my real public activity. Watch." *Click Sync on GitHub, then LeetCode.* "Real commits, real accepted solves, timestamped, straight into the graph as verified evidence — confidence zero-point-nine, versus zero-point-three for anything I merely claim. You can't lie to this thing about shipping code."
+**SAY:** "Because Legacy knows my gaps, it trains me. Every day: three quests
+generated from my own graph — one attacks my weakest area, one advances my real
+project, and look at this one—" *(point)* "—generated from a casual chat about
+my bike. My character sheet isn't vibes: levels are arithmetic over verified
+actions. Interview prep, level zero. That's not a judgment, that's a count."
 
-**[1:10 – 2:05] The 30-Day Report**
+*Click "Prove it" on the commit quest.*
 
-*Switch tabs, click Generate (pre-warm before recording so you can cut the wait).*
+**SAY:** "And here's what no habit app can do: there are no checkboxes. I claim
+nothing. Legacy checks my actual commits, my actual solves, my actual
+conversations — no receipt, no credit. I watched it refuse me until the evidence
+existed. The referee is my own memory."
 
-> "Thirty days of reflections live in a Cognee knowledge graph. Four engines traverse it. Consistency scores — exact arithmetic over every node: hackathons 100%, DSA drifting at 50%, interview prep zero. Contradictions — found by graph traversal: 'committed to system design, twenty-two days, zero evidence, high severity.' And this — the Behavioral Inference Engine noticed my actions cluster in building while my stated goals say interviews and research. Seventy-two percent confidence, eleven supporting nodes. It's not telling me. It's asking."
+*(Green glow, +XP pop, proof line citing commit SHAs.)*
 
-*Click "Partially", after typing: "I've been reading system design chapters offline, just never logged them."*
+## Beat 5 — Insights: what a real memory notices (2:00–2:35)
 
-> "I push back — and the graph recalibrates. My correction becomes memory. Legacy gets more accurate every time you correct it. That's Cognee's memory lifecycle doing active calibration, live."
+*Screen: Insights tab, pre-generated.*
 
-*Show the green "Graph recalibrated" card.*
+**SAY:** "Storage remembers. A real memory *notices*. My alignment score — forty,
+drifting — computed, not guessed. Contradictions found by graph traversal: I
+claimed system design was underway; twenty-two days, zero evidence, high
+severity. A one-year projection at my current pace. And at the bottom, the
+question I've been avoiding—" *(read the open question verbatim, then one beat
+of silence)* "—no dashboard has ever asked me that."
 
-**[2:05 – 2:40] The projection + the question**
+## Beat 6 — One memory, every tool + the kicker (2:35–3:00)
 
-*Scroll to the projection.*
+*Screen: Memory Graph tab, slow zoom into the green entity cluster. Optionally
+splice a 3-second Claude Code clip calling the `legacy` MCP tools.*
 
-> "Then the question no AI answers: at this pace, who do you become? 'You will finish the hackathon portfolio. Every interview-prep goal stalls. Your biggest risk is arriving at placement season technically strong and interview-unprepared.' And finally — Legacy asks the question I've been avoiding."
+**SAY:** "This is the actual graph — five hundred nodes of me. And it's not
+locked in this app: it's a native tool inside Claude Code and Cursor via MCP, a
+terminal agent, a session hook. When I teach my coding agent 'go tests need the
+config folder copied first,' that becomes permanent memory a new teammate can
+query next month. Coding agents are brilliant and amnesiac. Legacy is the memory
+they all share."
 
-*Scroll to the Open Question. Read it out loud, verbatim. Pause one beat.*
-
-**[2:40 – 3:00] The kicker**
-
-*Switch to the Memory Graph tab — the in-app force-graph of the actual Cognee knowledge graph. Zoom in slowly on the green entity cluster.*
-
-> "Every ambitious person without a mentor is generating data about their trajectory that nobody reads — including them. Legacy reads it. Cognee remembers it. And every week it asks: are you becoming who you said you wanted to be? The house always remembers. Now, so do you."
+**SAY (kicker, over the graph):** "Every AI today forgets you at midnight.
+Legacy is the AI that actually knows you — and checks whether you're becoming
+who you said you'd be. Built on Cognee. The house always remembers. Now, so
+do I."
 
 ---
+
+## Extended live beats (judges' Q&A ammo)
+
+- **The onboarding demo** (if B2B comes up): in chat or CLI ask *"A new team
+  member asks: how do I run the unit tests in the payments service — anything
+  needed first?"* → Legacy returns the exact 3-step ritual including the
+  config-copy prerequisite it distilled from a coding session. Line: "the
+  senior's workflow became the org's onboarding doc, automatically."
+- **Cross-tool proof**: open a NEW Claude Code chat, ask "what have I been
+  working on this week?" — it reaches into Legacy on its own.
+- **The numbers**: "Six Cognee operations used deeply, nine typed node kinds,
+  five surfaces, ~500 graph nodes — and the entire build's inference bill was
+  under a dollar. Memory-native architecture is cheap: recall is top-K
+  retrieval plus synthesis, so the token cost is constant whether the graph
+  holds one month or ten years."
 
 ## Judge Q&A crib sheet
 
-- **"Can users fake evidence?"** — Source-agnostic with confidence tiers: manual claims start at 0.3, GitHub-verified evidence at 0.9. The graph knows the difference. LeetCode/Notion/Calendar are v2 adapters on the same interface.
-- **"Sparse data?"** — Sparse data produces *lower confidence*, not wrong answers. Every insight ships with its confidence and supporting-node count. 3 nodes → "hypothesis only." 17 nodes → actionable.
-- **"Why not a journal app?"** — A journal stores text. Legacy cross-references CLAIM nodes against the *absence* of ACTION edges via graph traversal, with temporal day-count reasoning. A journal can't tell you you've claimed consistency for 21 days with zero evidence.
-- **"How is this deep Cognee usage?"** — Typed memory strings shaped for graph extraction; backdated timestamps recall reasons over temporally; four purpose-built GRAPH_COMPLETION engines; calibration nodes closing the improve loop; forget-with-a-reason closure. Flat conversation storage can do none of this.
-- **"Why the local ledger for scores?"** — Deliberate split: semantic/graph reasoning belongs to Cognee; score arithmetic must be deterministic and reproducible on stage. Right tool for each layer.
-- **"Business model?"** — First-gen students without alumni networks; university career centers; EdTech licensing. Self-hostable via Cognee OSS for privacy.
+- **"How is this different from ChatGPT memory?"** — ChatGPT stores text about
+  you and trusts it. Legacy builds a typed graph, demands evidence for claims
+  (0.3 vs 0.9 confidence), computes its scores deterministically, learns from
+  your corrections, and is shared infrastructure across every tool, not a
+  feature inside one.
+- **"Can users fake evidence?"** — Claims enter at 0.3. Verified sources (git,
+  LeetCode) at 0.9. The quest judge refuses anything without a receipt — we
+  watched it refuse us during development.
+- **"What prevents hallucinated insights?"** — The LLM extracts and narrates;
+  it never computes. Scores, levels, alignment: plain arithmetic over an exact
+  node ledger, reproducible by hand. Every insight cites node dates.
+- **"Sparse data?"** — Lower confidence, not wrong answers: every insight
+  carries its supporting-node count and confidence.
+- **"Privacy?"** — Opt-in switches (off means off), metadata-only project
+  learning, workflow distillation that never stores code or secrets,
+  forget-with-a-reason, self-hostable via Cognee OSS, and full provenance.
+- **"Scale?"** — Recall is top-K + synthesis: constant tokens regardless of
+  graph size. The CME stores 2–6 dense nodes per interaction, so the graph
+  grows with signal, not transcripts. Long-term precision → consolidation
+  (merge/decay), the first roadmap item.
+- **"Business?"** — Freemium personal → Pro (auto evidence sync, quests) →
+  Teams (shared org memory: onboarding that writes itself) → Enterprise
+  (self-hosted). The moat: six months of graph makes switching unthinkable —
+  memory is the stickiest surface in software.
