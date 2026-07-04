@@ -14,6 +14,7 @@ Run via terminal (works from any directory):
 - Capture:  `~/hangover/legacy remember "<one dense sentence about what they did/decided>"`
 - Evidence: `~/hangover/legacy observe`   (run inside the project's git repo)
 - Deep-learn a finished project (metadata only): `~/hangover/legacy learn`
+- Session end (user taught you commands/rituals): `echo "<summary>" | ~/hangover/legacy distill -`
 
 When the user says "build it like <past project>" or "combine my apps X and Y":
 first run `legacy ask` to get each project's stack, architecture, features and

@@ -16,7 +16,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from . import cme, cognee_client, engines, ledger, observer, project_learner, sources
+from . import cme, cognee_client, engines, ledger, observer, project_learner, session_memory, sources
 
 mcp = FastMCP(
     "legacy",
@@ -96,6 +96,20 @@ def legacy_sync_evidence() -> str:
         r = fn()
         out.append(f"{name}: {r.get('error') or str(r['synced']) + ' new verified node(s)'}")
     return " | ".join(out)
+
+
+@mcp.tool()
+def legacy_store_session(session_summary: str, project: str = "") -> str:
+    """Store a work session's durable workflow knowledge into permanent memory.
+    Call at the END of a session (or when the user shares how something is
+    done). Pass the instructions the user gave and commands that were run —
+    e.g. "user said lint = make lint from repo root; ran: cp -r config
+    services/payments && go test ./...". Legacy distills reusable how-to
+    facts (commands, rituals, conventions); code and secrets are never stored."""
+    stored = session_memory.distill_text(session_summary, source="mcp-session", project_hint=project)
+    if not stored:
+        return "No durable workflow knowledge found in that session."
+    return f"Stored {len(stored)} workflow fact(s): " + " | ".join(s[:100] for s in stored)
 
 
 @mcp.tool()

@@ -32,7 +32,7 @@ Every AI resets. Every session starts at zero. You've told your chatbot your goa
 
 **Talk to it.** `./legacy` is a real conversation — ask it to analyze your new bike, plan a trip, review an idea. It answers like a capable assistant, reaches into your memory graph when your past matters, and quietly distills the durable parts of every exchange (preferences, facts, decisions) into permanent memory. Tell it about your bike today; ask "what's my favourite bike?" in a fresh session next week — it knows.
 
-**Work near it.** Your Claude Code sessions, git pushes, and LeetCode solves flow in as verified evidence (opt-in, always).
+**Work near it.** Your Claude Code sessions, git pushes, and LeetCode solves flow in as verified evidence (opt-in, always). And the commands you teach your coding agents — *"lint is `make lint` from repo root; go tests need `config/` copied into the service folder first"* — are distilled into permanent workflow memory at session end, from every tool: the Claude Code hook does it automatically, MCP clients call `legacy_store_session`, anything else pipes to `legacy distill -`. Tribal knowledge that used to live in seniors' heads becomes memory a new teammate can query.
 
 **And over time, it gives you back what no AI ever has:**
 

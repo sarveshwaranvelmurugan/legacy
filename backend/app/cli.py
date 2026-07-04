@@ -18,7 +18,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from . import chat, cme, cognee_client, config, engines, installer, ledger, observer, project_learner, sources
+from . import chat, cme, cognee_client, config, engines, installer, ledger, observer, project_learner, session_memory, sources
 
 console = Console()
 _claude = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
@@ -221,7 +221,8 @@ COMMANDS = [
     ("connect github|leetcode <user>", "opt a source in (login) — its public activity becomes verified evidence"),
     ("disconnect github|leetcode", "opt a source out (logout) — off means off, nothing is read"),
     ("sync [source]", "pull new verified evidence from connected sources (deduped)"),
-    ("autocapture [on|off]", "auto-run observe when a Claude Code session ends (default off; consent flag)"),
+    ("distill <text | ->", "store a work session's workflow knowledge (commands, rituals, conventions); '-' reads stdin — for any agent to call at session end"),
+    ("autocapture [on|off]", "when a Claude Code session ends: auto-observe the repo AND distill the session's workflow knowledge (default off; consent flag)"),
     ("setup", "full mode for this machine: Claude Code skill + MCP server registration"),
     ("hook", "wire THIS project for Cursor + AGENTS.md agents"),
     ("help", "this reference"),
@@ -289,6 +290,14 @@ def one_shot(argv: list[str]) -> None:
     elif cmd == "disconnect" and len(argv) >= 2 and argv[1] in ("github", "leetcode"):
         sources.update_settings({argv[1]: {"enabled": False}})
         console.print(f"[yellow]○ {argv[1]} disconnected[/] — Legacy will not read it")
+    elif cmd == "distill":
+        text = sys.stdin.read() if rest.strip() == "-" else rest
+        with console.status("[dim]distilling workflow knowledge…[/]"):
+            stored = session_memory.distill_text(text, source="agent-session")
+        if not stored:
+            console.print("[dim]no durable workflow knowledge in that session.[/]")
+        for s in stored:
+            console.print(f"  [cyan]■ WORKFLOW[/] {s[11:120]}")
     elif cmd == "sync":
         targets = [argv[1]] if len(argv) >= 2 and argv[1] in ("github", "leetcode") else [
             n for n, c in sources.get_settings().items() if c["enabled"] and c["username"]]

@@ -8,11 +8,14 @@ graph. Your session is amnesiac; Legacy is not. Bridge through its CLI
     ~/hangover/legacy remember "finished the payments refactor, shipped to staging"
     ~/hangover/legacy observe    # record this repo's git state as verified evidence
     ~/hangover/legacy learn      # deep-study this project's patterns (metadata only)
+    echo "<session workflow summary>" | ~/hangover/legacy distill -   # store how-things-are-done knowledge at session end
 
 Rules of thumb:
 - User references past projects or patterns -> `ask` first, design from the answer.
 - User finishes/decides something notable -> `remember` it; in a git repo also
   `observe` + `learn`.
+- End of a session where the user taught you commands/rituals/conventions ->
+  summarize them and pipe to `distill -` (commands and how-tos only; never code or secrets).
 - Never store secrets or third-party private data in Legacy.
 
 Copy this section into your tool's agent-instructions file (AGENTS.md,

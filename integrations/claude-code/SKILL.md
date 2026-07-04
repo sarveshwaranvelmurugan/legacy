@@ -24,6 +24,10 @@ The CLI lives at `/Users/sarveshwaran/hangover/legacy` and works from any cwd:
 # (run from inside the project directory being discussed)
 /Users/sarveshwaran/hangover/legacy observe
 
+# DISTILL — at the end of a substantial work session, store its workflow
+# knowledge (commands the user taught you, rituals, conventions — never code):
+echo "user taught: lint = make lint from repo root; go tests need config/ copied into the service folder first" | /Users/sarveshwaran/hangover/legacy distill -
+
 # LEARN — deep-study a project's stack/architecture/features/patterns into
 # memory (metadata only: README, manifests, tree, commit messages — no source).
 # Run from inside the project directory. Do this when a project is finished.

@@ -10,6 +10,7 @@ luck, the tools are just there in every session:
 | `legacy_observe` | record a repo's git state as verified evidence |
 | `legacy_learn_project` | deep-study a finished project (metadata only) |
 | `legacy_sync_evidence` | pull GitHub/LeetCode activity from connected sources |
+| `legacy_store_session` | at session end: distill the session's workflow knowledge (commands, rituals, conventions) into permanent memory |
 | `legacy_alignment` | the user's current 0-100 alignment score |
 
 ## Claude Code
