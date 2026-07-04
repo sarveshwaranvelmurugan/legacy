@@ -14,6 +14,11 @@ Every AI resets. Every session starts at zero. You've told your chatbot your goa
 
 ![Chat — the AI that actually knows you, across sessions](docs/screenshots/chat.png)
 
+<p align="center">
+  <img src="docs/screenshots/quests.png" width="49%" alt="Quests — proof-verified challenges generated from your own memory"/>
+  <img src="docs/screenshots/profile.png" width="49%" alt="Profile — what Legacy knows about you, straight from the graph"/>
+</p>
+
 ![The 30-Day Report — alignment score, deterministic consistency, contradiction table](docs/screenshots/report.png)
 
 <p align="center">
@@ -38,6 +43,8 @@ Every AI resets. Every session starts at zero. You've told your chatbot your goa
 | **Behavioral Hypotheses** | *"You appear to be prioritizing building over your declared interview-prep goals — is this accurate?"* — 72% confidence, 11 supporting nodes, three buttons |
 | **1-Year Projection** | An honest trajectory forecast: what completes, what stalls, what it costs you |
 | **The Open Question** | The one question you're avoiding, asked directly |
+| **Quests** | improvement as a game you can't cheat: daily challenges generated from YOUR graph (weakest area, active project, a real interest), completed only by PROOF — synced evidence or conversation memory — with deterministic domain levels |
+| **What Legacy Knows About You** | your identity as the graph sees it: preferences, facts, projects, strengths, weak spots |
 | **Memory Graph** | your actual Cognee knowledge graph rendered live in-app — hundreds of nodes, force-directed, zoomable |
 | **Evidence Sources** | opt-in toggles: GitHub pushes and LeetCode accepted solves synced as *verified* evidence (0.9) vs self-reported claims (0.3) |
 
