@@ -56,9 +56,11 @@ memory, questions are answered from memory. `/report` runs all engines inline.
 
 ## Other agents can remember through Legacy too
 
-Claude Code forgets everything between chats. Drop the skill from
-[`integrations/claude-code/`](integrations/claude-code) into `~/.claude/skills/legacy/`
-and every new Claude Code session can reach your memory:
+Every AI coding tool forgets you between chats — Legacy is the memory they share.
+Hookups included for **Claude Code** ([`integrations/claude-code/`](integrations/claude-code)
+→ `~/.claude/skills/legacy/`), **Cursor** ([`integrations/cursor/`](integrations/cursor)
+→ `.cursor/rules/`), and **any agent with a terminal**
+([`integrations/any-agent/AGENTS.md`](integrations/any-agent/AGENTS.md)). Then every new session can reach your memory:
 
 - you ask a fresh chat *"what was I working on last week?"* → Claude runs
   `legacy ask …` and answers from your graph
