@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import cme, cognee_client, config, engines, ledger, sources
+from . import chat, cme, cognee_client, config, engines, ledger, sources
 
 app = FastAPI(title="Legacy", version="0.2.0")
 
@@ -74,6 +74,22 @@ def reflect(r: Reflection, background: BackgroundTasks):
     if will_ask:
         background.add_task(engines.agent_tick)
     return {"nodes": nodes, "memory_strings": strings, "agent_will_ask": will_ask}
+
+
+class ChatTurn(BaseModel):
+    messages: list[dict]  # [{role: user|assistant, content: str}, ...]
+
+
+@app.post("/chat")
+def chat_turn(t: ChatTurn, background: BackgroundTasks):
+    """One conversational turn. Reply returns immediately; the durable parts
+    of the exchange are distilled into memory in the background."""
+    history = [m for m in t.messages if m.get("role") in ("user", "assistant")][-24:]
+    if not history or history[-1]["role"] != "user":
+        raise HTTPException(400, "last message must be from the user")
+    reply = chat.converse(history)
+    background.add_task(chat.remember_exchange, history[-1]["content"], reply)
+    return {"reply": reply}
 
 
 @app.get("/report")

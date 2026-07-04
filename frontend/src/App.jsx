@@ -542,10 +542,101 @@ function GraphScreen() {
   )
 }
 
+/* ----------------------------------- chat ---------------------------------- */
+
+function ChatScreen() {
+  const [messages, setMessages] = useState([])
+  const [input, setInput] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const endRef = useRef(null)
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, busy])
+
+  const send = async () => {
+    const text = input.trim()
+    if (!text || busy) return
+    setInput(''); setError(null)
+    const next = [...messages, { role: 'user', content: text }]
+    setMessages(next); setBusy(true)
+    try {
+      const r = await api('/chat', { method: 'POST', body: JSON.stringify({ messages: next.slice(-24) }) })
+      setMessages([...next, { role: 'assistant', content: r.reply }])
+    } catch (e) {
+      setError(e); setMessages(next)
+    }
+    setBusy(false)
+  }
+
+  return (
+    <div className="flex flex-col" style={{ minHeight: '58vh' }}>
+      {messages.length === 0 && (
+        <div className="text-center py-14">
+          <p className="font-serif italic text-[#e8e4da] text-lg">Talk to the AI that actually knows you.</p>
+          <p className="text-xs text-[#6b6f80] mt-2 max-w-md mx-auto">
+            Analysis, advice, anything — like ChatGPT, except Legacy still remembers this
+            conversation next month. Try: "what's my favourite bike?" or "what did I build in June?"
+          </p>
+        </div>
+      )}
+
+      <div className="flex-1 space-y-4">
+        {messages.map((m, i) => (
+          m.role === 'user' ? (
+            <div key={i} className="flex justify-end">
+              <div className="max-w-[85%] bg-[#1e2028] border border-[#2a2c34] rounded-2xl rounded-br-sm px-4 py-2.5 text-sm text-[#e8e4da]">
+                {m.content}
+              </div>
+            </div>
+          ) : (
+            <div key={i} className="flex">
+              <div className="max-w-[92%] border border-[#23252d] bg-[#121318] rounded-2xl rounded-bl-sm px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[#565a68] mb-1">legacy</div>
+                <Markdown text={m.content} />
+              </div>
+            </div>
+          )
+        ))}
+        {busy && (
+          <div className="flex">
+            <div className="border border-[#23252d] bg-[#121318] rounded-2xl rounded-bl-sm px-4 py-3 text-sm text-[#6b6f80] animate-pulse">
+              thinking — checking memory if it needs to…
+            </div>
+          </div>
+        )}
+        <ErrorNote error={error} />
+        <div ref={endRef} />
+      </div>
+
+      <div className="mt-5 flex gap-2 sticky bottom-4">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && send()}
+          placeholder="say anything — Legacy remembers what matters…"
+          className="flex-1 bg-[#0d0e12] border border-[#2a2c34] rounded-xl px-4 py-3 text-sm text-[#d7d3cb] placeholder-[#565a68] focus:outline-none focus:border-[#4a4e5e]"
+        />
+        <button
+          onClick={send}
+          disabled={busy || !input.trim()}
+          className="px-5 py-3 rounded-xl bg-[#f0ede6] text-[#0d0e12] text-sm font-medium hover:bg-white disabled:opacity-30 transition"
+        >
+          Send
+        </button>
+      </div>
+      {messages.length > 0 && (
+        <p className="text-[10px] text-[#3f424e] font-mono text-center mt-2">
+          ◆ the durable parts of this conversation are being remembered — close the tab, Legacy still knows
+        </p>
+      )}
+    </div>
+  )
+}
+
 /* ----------------------------------- app ----------------------------------- */
 
 export default function App() {
-  const [tab, setTab] = useState('reflect')
+  const [tab, setTab] = useState('chat')
 
   return (
     <div className="max-w-3xl mx-auto px-5 py-10">
@@ -560,7 +651,7 @@ export default function App() {
           Are you becoming who you said you wanted to be?
         </p>
         <nav className="flex gap-1 mt-6 border-b border-[#23252d]">
-          {[['reflect', 'Reflect'], ['report', '30-Day Report'], ['graph', 'Memory Graph']].map(([id, label]) => (
+          {[['chat', 'Chat'], ['reflect', 'Reflect'], ['report', '30-Day Report'], ['graph', 'Memory Graph']].map(([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -576,6 +667,7 @@ export default function App() {
         </nav>
       </header>
 
+      {tab === 'chat' && <ChatScreen />}
       {tab === 'reflect' && <ReflectScreen />}
       {tab === 'report' && <ReportScreen />}
       {tab === 'graph' && <GraphScreen />}

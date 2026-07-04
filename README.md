@@ -12,6 +12,8 @@ Every AI resets. Every session starts at zero. You've told your chatbot your goa
 
 > **It catches you lying to yourself. With evidence. And it asks — never tells.**
 
+![Chat — the AI that actually knows you, across sessions](docs/screenshots/chat.png)
+
 ![The 30-Day Report — alignment score, deterministic consistency, contradiction table](docs/screenshots/report.png)
 
 <p align="center">
