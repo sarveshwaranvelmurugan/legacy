@@ -611,6 +611,99 @@ function ProfileScreen() {
   )
 }
 
+/* ---------------------------------- quests --------------------------------- */
+
+const VERIFY_LABEL = { github: 'proven by commit', leetcode: 'proven by solve', chat: 'proven in chat' }
+
+function QuestCard({ quest, onVerified }) {
+  const [busy, setBusy] = useState(false)
+  const [verdict, setVerdict] = useState(null)
+  const [error, setError] = useState(null)
+
+  const prove = async () => {
+    setBusy(true); setError(null)
+    try {
+      const r = await api(`/quests/${quest.id}/verify`, { method: 'POST' })
+      setVerdict(r.verdict || { done: true, proof: r.message })
+      if (r.quest.status === 'DONE') onVerified?.()
+    } catch (e) { setError(e) }
+    setBusy(false)
+  }
+
+  const done = quest.status === 'DONE' || verdict?.done
+  return (
+    <div className={`border rounded-xl p-4 space-y-2 ${done ? 'border-emerald-900 bg-emerald-950/30' : 'border-[#2a2c34] bg-[#121318]'}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-sm text-[#e8e4da] font-medium">{done ? '✓ ' : ''}{quest.title}</div>
+        <span className="font-mono text-xs text-amber-300 shrink-0">+{quest.xp} xp</span>
+      </div>
+      <p className="text-xs text-[#8b8fa3]">{quest.why}</p>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] uppercase tracking-[0.15em] font-mono text-[#565a68]">{VERIFY_LABEL[quest.verify]}</span>
+        {!done && (
+          <button onClick={prove} disabled={busy}
+            className="px-3 py-1.5 rounded-md border border-[#2a2c34] text-xs text-[#d7d3cb] hover:border-[#4a4e5e] hover:bg-[#1a1c22] disabled:opacity-40 transition">
+            {busy ? 'checking receipts…' : 'Prove it'}
+          </button>
+        )}
+      </div>
+      {verdict && !verdict.done && (
+        <p className="text-xs text-amber-400/90">Not proven: {verdict.proof}</p>
+      )}
+      {done && (quest.proof || verdict?.proof) && (
+        <p className="text-xs text-emerald-400/80">{quest.proof || verdict.proof}</p>
+      )}
+      <ErrorNote error={error} />
+    </div>
+  )
+}
+
+function QuestsScreen() {
+  const [board, setBoard] = useState(null)
+  const [error, setError] = useState(null)
+
+  const load = () => api('/quests').then(setBoard).catch(setError)
+  useEffect(() => { load() }, [])
+
+  return (
+    <div className="space-y-5">
+      <Section kicker="deterministic — verified evidence is worth more" title="Character Sheet">
+        {!board && !error && <Skeleton lines={5} />}
+        {board && (
+          <div className="space-y-2.5">
+            {board.levels.map((l) => (
+              <div key={l.domain} className="flex items-center gap-3">
+                <span className="font-mono text-xs text-amber-300 w-12 shrink-0">Lv {l.level}</span>
+                <span className="text-sm text-[#d7d3cb] w-56 shrink-0 truncate">{l.domain}</span>
+                <div className="flex-1 h-2 rounded-full bg-[#1a1c22] overflow-hidden">
+                  <div className="h-full rounded-full bg-gradient-to-r from-emerald-700 to-emerald-400"
+                       style={{ width: `${Math.round(l.progress * 100)}%` }} />
+                </div>
+                <span className="font-mono text-[10px] text-[#565a68] w-24 text-right shrink-0">{l.xp}/{l.next_level_xp} xp</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section kicker="generated from your graph · no checkboxes, only receipts" title="Today's Quests">
+        <ErrorNote error={error} onRetry={load} />
+        {!board && !error && <Skeleton lines={6} />}
+        {board && (
+          <div className="space-y-3">
+            {board.quests.map((q) => <QuestCard key={q.id} quest={q} onVerified={load} />)}
+          </div>
+        )}
+        <p className="text-[11px] text-[#565a68] mt-3">
+          You don't tick these — you prove them. Legacy checks your synced evidence and
+          conversation memory; a completed quest becomes a verified action in the graph
+          and moves your real scores.
+        </p>
+      </Section>
+    </div>
+  )
+}
+
 /* ----------------------------------- app ----------------------------------- */
 
 export default function App() {
@@ -629,7 +722,7 @@ export default function App() {
           The AI that actually knows you.
         </p>
         <nav className="flex gap-1 mt-6 border-b border-[#23252d]">
-          {[['chat', 'Chat'], ['profile', 'Profile'], ['report', 'Insights'], ['graph', 'Memory Graph']].map(([id, label]) => (
+          {[['chat', 'Chat'], ['profile', 'Profile'], ['quests', 'Quests'], ['report', 'Insights'], ['graph', 'Memory Graph']].map(([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -647,6 +740,7 @@ export default function App() {
 
       {tab === 'chat' && <ChatScreen />}
       {tab === 'profile' && <ProfileScreen />}
+      {tab === 'quests' && <QuestsScreen />}
       {tab === 'report' && <ReportScreen />}
       {tab === 'graph' && <GraphScreen />}
 

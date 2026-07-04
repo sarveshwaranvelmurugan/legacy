@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import chat, cme, cognee_client, config, engines, ledger, sources
+from . import chat, cme, cognee_client, config, engines, ledger, quests, sources
 
 app = FastAPI(title="Legacy", version="0.2.0")
 
@@ -74,6 +74,19 @@ def reflect(r: Reflection, background: BackgroundTasks):
     if will_ask:
         background.add_task(engines.agent_tick)
     return {"nodes": nodes, "memory_strings": strings, "agent_will_ask": will_ask}
+
+
+@app.get("/quests")
+def quests_today():
+    return quests.today()
+
+
+@app.post("/quests/{quest_id}/verify")
+def quest_verify(quest_id: str):
+    try:
+        return quests.verify(quest_id)
+    except KeyError:
+        raise HTTPException(404, "unknown quest")
 
 
 @app.get("/profile")
