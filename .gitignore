@@ -19,3 +19,4 @@ backend/ledger.jsonl
 # misc
 .DS_Store
 test-results/
+backend/sources.json

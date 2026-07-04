@@ -25,6 +25,8 @@ You give Legacy a two-minute daily reflection. Legacy gives you back, over time:
 | **Behavioral Hypotheses** | *"You appear to be prioritizing building over your declared interview-prep goals — is this accurate?"* — 72% confidence, 11 supporting nodes, three buttons |
 | **1-Year Projection** | An honest trajectory forecast: what completes, what stalls, what it costs you |
 | **The Open Question** | The one question you're avoiding, asked directly |
+| **Memory Graph** | your actual Cognee knowledge graph rendered live in-app — hundreds of nodes, force-directed, zoomable |
+| **Evidence Sources** | opt-in toggles: GitHub pushes and LeetCode accepted solves synced as *verified* evidence (0.9) vs self-reported claims (0.3) |
 
 And the part that matters most: **when you push back, the memory updates.** Respond "partially accurate — I've been reading papers offline" and Legacy extracts that correction into new nodes, recalibrates confidence, and its next answer reflects it. Memory that learns from being corrected.
 
@@ -75,7 +77,7 @@ memory layer any tool can call — your coding agent is amnesiac; your memory ag
 
 ## Why it's an agent, not an app
 
-- **Perceives — ambiently.** The CLI observes your actual workspace (git) on every launch, unasked. Daily reflections and a GitHub adapter add the rest; git-verified evidence (confidence 0.9) vs self-reported claims (0.3) — the graph knows the difference.
+- **Perceives — ambiently and with consent.** The CLI observes your actual workspace (git) on every launch, unasked. Opt-in evidence sources (GitHub pushes, LeetCode solves) pull your real public activity as verified evidence (0.9) vs self-reported claims (0.3) — the graph knows the difference, and every source is a switch you control.
 - **Maintains a world-model** — a typed, confidence-weighted knowledge graph on Cognee, persistent across every session.
 - **Reasons** — five engines over that graph (contradiction, consistency, behavioral inference, projection, open question).
 - **Acts on its own initiative** — after each reflection Legacy decides for itself whether enough new behavior has accumulated to challenge you with a fresh hypothesis. You don't ask it; it asks you.
