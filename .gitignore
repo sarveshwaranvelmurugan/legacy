@@ -20,3 +20,4 @@ backend/ledger.jsonl
 .DS_Store
 test-results/
 backend/sources.json
+backend/quests.json

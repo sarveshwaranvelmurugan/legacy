@@ -19,7 +19,7 @@ from pathlib import Path
 
 import anthropic
 
-from . import cme, cognee_client, config, ledger, sources
+from . import cme, cognee_client, config, ledger, observer, sources
 
 _client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
 _STORE = Path(__file__).resolve().parents[1] / "quests.json"
@@ -83,10 +83,12 @@ def _generate() -> list[dict]:
         "\n\nGenerate exactly 3 quests for today: (1) one attacking the WEAKEST "
         "area, (2) one advancing their current active project, (3) one that makes "
         "an interest productive. Each must be completable within ~30 minutes today "
-        "and provable: verify=github (a commit), verify=leetcode (an accepted "
-        "solve), or verify=chat (explain a concept to Legacy in conversation — "
-        "name the concept in the title). xp between 20 and 60, weakest area "
-        "highest. 'why' is one dry, honest sentence citing the user's own numbers."
+        "and provable with a SIMPLE, GENERIC receipt: verify=github (title must be "
+        "'Push at least one commit to <repo>' — never reference specific files or "
+        "counts), verify=leetcode (title 'Solve one <difficulty> problem'), or "
+        "verify=chat (explain a named concept to Legacy in conversation). "
+        "xp between 20 and 60, weakest area highest. 'why' is one dry, honest "
+        "sentence citing the user's own numbers."
     )
     response = _client.messages.create(
         model=config.CME_MODEL,
@@ -129,6 +131,9 @@ def verify(quest_id: str) -> dict:
         cfg = sources.get_settings()[quest["verify"]]
         if cfg["enabled"] and cfg["username"]:
             {"github": sources.sync_github, "leetcode": sources.sync_leetcode}[quest["verify"]]()
+    if quest["verify"] == "github":
+        # local git is the freshest truth (GitHub's events API lags minutes)
+        observer.look(Path(__file__).resolve().parents[2])
 
     today_s = date.today().isoformat()
     todays = [e["text"] for e in ledger.load() if e["date"] == today_s][-30:]
@@ -144,9 +149,15 @@ def verify(quest_id: str) -> dict:
         model=config.CME_MODEL,
         max_tokens=300,
         system=("You judge whether a quest was completed TODAY based only on the "
-                "memory entries provided. Strict: no entry, no credit. Reply as "
-                "JSON only: {\"done\": true|false, \"proof\": \"one line citing the "
-                "entry that proves it, or what is missing\"}"),
+                "memory entries provided. Strict: no supporting entry, no credit. "
+                "Judge INTENT, not letter; later entries supersede earlier notes. "
+                "Rules per verify type — github: DONE if any entry shows a commit "
+                "or push to the named repo today. leetcode: DONE if any entry "
+                "shows an accepted solve today matching the difficulty. chat: DONE "
+                "if the conversation memory shows the user genuinely discussed or "
+                "explained the named topic today. Reply as JSON only: "
+                "{\"done\": true|false, \"proof\": \"one line citing the entry "
+                "that proves it, or what is missing\"}"),
         messages=[{"role": "user", "content":
                    f"Quest: {quest['title']} (verify via {quest['verify']})\n\n"
                    f"Today's memory entries:\n" + "\n".join(todays)}],
