@@ -384,6 +384,28 @@ function ReportScreen() {
               {busy ? 'refreshing…' : '↻ regenerate'}
             </button>
           </div>
+
+          {report.alignment && (
+            <section className="border border-[#23252d] rounded-xl bg-[#121318] p-6 flex items-center gap-6">
+              <div className="text-center shrink-0">
+                <div className={`font-serif text-6xl leading-none ${
+                  report.alignment.score > 75 ? 'text-emerald-300'
+                  : report.alignment.score >= 40 ? 'text-amber-300' : 'text-rose-300'
+                }`}>{report.alignment.score}</div>
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[#6b6f80] mt-1">alignment</div>
+              </div>
+              <div>
+                <div className={`text-sm font-medium mb-1 ${
+                  report.alignment.score > 75 ? 'text-emerald-300'
+                  : report.alignment.score >= 40 ? 'text-amber-300' : 'text-rose-300'
+                }`}>{report.alignment.verdict}</div>
+                <p className="text-xs text-[#8b8fa3] leading-relaxed">
+                  How closely your verified behavior matches who you said you want to become.
+                  {' '}{report.alignment.explanation} Deterministic — recompute it yourself.
+                </p>
+              </div>
+            </section>
+          )}
           <ErrorNote error={error} onRetry={generate} />
 
           <Section kicker="engine 2 · deterministic ledger arithmetic" title="Goal Consistency">

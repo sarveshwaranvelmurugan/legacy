@@ -12,6 +12,13 @@ Every AI resets. Every session starts at zero. You've told your chatbot your goa
 
 > **It catches you lying to yourself. With evidence. And it asks — never tells.**
 
+![The 30-Day Report — alignment score, deterministic consistency, contradiction table](docs/screenshots/report.png)
+
+<p align="center">
+  <img src="docs/screenshots/memory-graph.png" width="49%" alt="The Memory Graph — the actual Cognee knowledge graph rendered in-app"/>
+  <img src="docs/screenshots/reflect-sources.png" width="49%" alt="Reflection distillation and opt-in evidence sources"/>
+</p>
+
 ---
 
 ## What it does
@@ -57,10 +64,11 @@ memory, questions are answered from memory. `/report` runs all engines inline.
 ## Other agents can remember through Legacy too
 
 Every AI coding tool forgets you between chats — Legacy is the memory they share.
-Hookups included for **Claude Code** ([`integrations/claude-code/`](integrations/claude-code)
-→ `~/.claude/skills/legacy/`), **Cursor** ([`integrations/cursor/`](integrations/cursor)
-→ `.cursor/rules/`), and **any agent with a terminal**
-([`integrations/any-agent/AGENTS.md`](integrations/any-agent/AGENTS.md)). Then every new session can reach your memory:
+Hookups included for **MCP** ([`integrations/mcp/`](integrations/mcp) — Legacy's six memory
+tools become *native* in Claude Code, Cursor, Claude Desktop; `./legacy setup` registers it),
+**Claude Code skills** ([`integrations/claude-code/`](integrations/claude-code)),
+**Cursor rules** ([`integrations/cursor/`](integrations/cursor)), and **any agent with a
+terminal** ([`integrations/any-agent/AGENTS.md`](integrations/any-agent/AGENTS.md)). Then every new session can reach your memory:
 
 - you ask a fresh chat *"what was I working on last week?"* → Claude runs
   `legacy ask …` and answers from your graph

@@ -108,6 +108,11 @@ def _report() -> None:
             q = pool.submit(engines.open_question)
             scores = engines.consistency_scorer()
             contra, proj, q = contra.result(), proj.result(), q.result()
+    al = ledger.alignment()
+    color = "green" if al["score"] > 75 else "yellow" if al["score"] >= 40 else "red"
+    console.print(Panel(
+        f"[bold {color}]{al['score']} / 100 — {al['verdict']}[/]\n[dim]{al['explanation']}[/]",
+        title="alignment", title_align="left", border_style=color))
     console.print(Panel(Markdown(scores), title="goal consistency", title_align="left", border_style="dim"))
     console.print(Panel(Markdown(contra), title="contradictions", title_align="left", border_style="red"))
     console.print(Panel(Markdown(proj), title="your next year, at this pace", title_align="left", border_style="dim"))
@@ -253,8 +258,15 @@ def one_shot(argv: list[str]) -> None:
     elif cmd == "setup":
         dst = installer.setup_claude_skill()
         console.print(f"[green]✓ Claude Code skill installed[/] → {dst}")
-        console.print("[dim]every new Claude Code session can now reach your memory.[/]")
-        console.print("[dim]per-project wiring (Cursor + AGENTS.md): run [bold]legacy hook[/] inside a project.[/]")
+        ok, mcp_cmd = installer.setup_mcp()
+        if ok:
+            console.print("[green]✓ MCP server registered with Claude Code[/] — Legacy tools are now native in every session")
+        else:
+            console.print(f"[yellow]MCP not auto-registered[/] (is the claude CLI installed?). Register manually:\n  [dim]{mcp_cmd}[/]")
+        import json as _json
+        console.print("[dim]Cursor MCP (add to ~/.cursor/mcp.json):[/]")
+        console.print("[dim]" + _json.dumps(installer.mcp_configs()["cursor"], indent=1) + "[/]")
+        console.print("[dim]per-project wiring (Cursor rules + AGENTS.md): run [bold]legacy hook[/] inside a project.[/]")
     elif cmd == "hook":
         for f in installer.hook_project(Path.cwd()):
             console.print(f"[green]✓[/] {f}")

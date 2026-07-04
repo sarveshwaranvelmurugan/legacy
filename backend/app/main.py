@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import cme, cognee_client, config, engines, sources
+from . import cme, cognee_client, config, engines, ledger, sources
 
 app = FastAPI(title="Legacy", version="0.2.0")
 
@@ -87,6 +87,7 @@ def report():
         question = pool.submit(engines.open_question)
         return {
             "generated": date.today().isoformat(),
+            "alignment": ledger.alignment(),
             "consistency": engines.consistency_scorer(),
             "hypotheses": engines.pending_hypotheses(),
             "contradictions": contradictions.result(),

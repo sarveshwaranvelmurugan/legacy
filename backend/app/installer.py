@@ -59,3 +59,34 @@ def hook_project(project: Path | None = None) -> list[str]:
         agents_dst.write_text(section)
         installed.append(str(agents_dst))
     return installed
+
+
+PYTHON = str(REPO_ROOT / ".venv" / "bin" / "python")
+BACKEND = str(REPO_ROOT / "backend")
+
+
+def mcp_configs() -> dict:
+    """Registration commands/configs for this machine's clone location."""
+    claude_cmd = (f"claude mcp add -s user legacy -e PYTHONPATH={BACKEND} "
+                  f"-- {PYTHON} -m app.mcp_server")
+    cursor_json = {
+        "mcpServers": {
+            "legacy": {
+                "command": PYTHON,
+                "args": ["-m", "app.mcp_server"],
+                "env": {"PYTHONPATH": BACKEND},
+            }
+        }
+    }
+    return {"claude": claude_cmd, "cursor": cursor_json}
+
+
+def setup_mcp() -> tuple[bool, str]:
+    """Try to register the MCP server with Claude Code; return (ok, command)."""
+    import subprocess
+    cmd = mcp_configs()["claude"]
+    try:
+        out = subprocess.run(cmd.split(), capture_output=True, text=True, timeout=30)
+        return out.returncode == 0, cmd
+    except Exception:
+        return False, cmd

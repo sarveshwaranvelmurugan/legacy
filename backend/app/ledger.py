@@ -63,3 +63,29 @@ def consistency_report(expected_per_month: int = 12) -> str:
             f"- {icon} **{area}** — {n} actions ({dates}) — **{score}%** — {verdict}"
         )
     return "\n".join(lines)
+
+
+def alignment() -> dict:
+    """The headline number: 0-100, how closely verified behavior matches
+    stated goals. Deterministic — the mean of the goal-area consistency
+    scores, with the share of externally verified evidence reported alongside.
+    """
+    entries = [e for e in load() if e["type"] in ("ACTION", "EVIDENCE")]
+    scores = []
+    for area in GOAL_AREAS:
+        n = len([e for e in entries if classify(e["text"]) == area])
+        scores.append(min(100, round(n / 12 * 100)))
+    score = round(sum(scores) / len(scores)) if scores else 0
+    verified = len([e for e in entries if e["type"] == "EVIDENCE"])
+    verdict = ("ALIGNED" if score > 75 else
+               "DRIFTING" if score >= 40 else "OFF COURSE")
+    return {
+        "score": score,
+        "verdict": verdict,
+        "verified_evidence": verified,
+        "total_actions": len(entries),
+        "explanation": (
+            f"Mean of {len(scores)} goal-area consistency scores; "
+            f"{verified} of {len(entries)} behavior nodes are externally verified."
+        ),
+    }
