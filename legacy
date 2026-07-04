@@ -1,0 +1,5 @@
+#!/bin/zsh
+# Legacy CLI launcher — run `./legacy` from anywhere (observes your cwd).
+LEGACY_ROOT="$(cd "$(dirname "$0")" && pwd)"
+export PYTHONPATH="$LEGACY_ROOT/backend"
+exec "$LEGACY_ROOT/.venv/bin/python" -m app.cli "$@"

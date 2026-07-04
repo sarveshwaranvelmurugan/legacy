@@ -7,6 +7,14 @@ graph explorer open in a second tab for the flyover shot.
 
 ---
 
+**[0:00 – 0:20] Cold open — the terminal (optional but strong)**
+
+*Screen: a terminal. Run `./legacy` inside the project.*
+
+> "I didn't tell it anything. Watch." *(point at the ◉ observed line)* "It looked at my terminal, saw the repo, the branch, today's commits — and remembered. Then it told me what it already knows about me. And then — it asked me a question it's been holding."
+
+*If using this cold open, compress the next section to 0:20–0:40.*
+
 **[0:00 – 0:25] The problem**
 
 > "Your AI woke up in Vegas with no memory of last night — that's every chatbot, every session. You've told it your goals fifty times; it remembers none of them. This is Legacy. It doesn't just remember what you said. It tracks who you're trying to become — and tells you, honestly, when you're drifting."

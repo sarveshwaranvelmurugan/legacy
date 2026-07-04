@@ -28,9 +28,33 @@ You give Legacy a two-minute daily reflection. Legacy gives you back, over time:
 
 And the part that matters most: **when you push back, the memory updates.** Respond "partially accurate — I've been reading papers offline" and Legacy extracts that correction into new nodes, recalibrates confidence, and its next answer reflects it. Memory that learns from being corrected.
 
+## The agent lives in your terminal
+
+```
+$ ./legacy
+Legacy. are you becoming who you said you wanted to be?
+◉ observed: hangover (main) — 1 commit(s) today, 4 file(s) in progress → 1 node(s) remembered.
+╭─ legacy remembers ──────────────────────────────────────────╮
+│ • Currently working on the hackathon portfolio (AI-memory   │
+│   system) … • Neglected: AI-research papers, mock interviews │
+╰─────────────────────────────────────────────────────────────╯
+╭─ legacy asks ───────────────────────────────────────────────╮
+│ He is prioritizing technical implementation work over his   │
+│ declared research and interview-preparation goals            │
+│ 85% confidence · 10 supporting nodes                         │
+╰─────────────────────────────────────────────────────────────╯
+you › _
+```
+
+Open a terminal in any project and run `./legacy`. **Without being told, it looks
+at where you are** — repo, branch, today's commits, uncommitted work — and
+remembers it (git history = verified evidence). It primes itself from the graph,
+asks the question it's been holding, then you just type: statements become
+memory, questions are answered from memory. `/report` runs all engines inline.
+
 ## Why it's an agent, not an app
 
-- **Perceives** — daily reflections + a GitHub adapter that turns real public commits into *verified* evidence nodes (confidence 0.9) vs self-reported claims (0.3). The graph knows the difference.
+- **Perceives — ambiently.** The CLI observes your actual workspace (git) on every launch, unasked. Daily reflections and a GitHub adapter add the rest; git-verified evidence (confidence 0.9) vs self-reported claims (0.3) — the graph knows the difference.
 - **Maintains a world-model** — a typed, confidence-weighted knowledge graph on Cognee, persistent across every session.
 - **Reasons** — five engines over that graph (contradiction, consistency, behavioral inference, projection, open question).
 - **Acts on its own initiative** — after each reflection Legacy decides for itself whether enough new behavior has accumulated to challenge you with a fresh hypothesis. You don't ask it; it asks you.
@@ -100,7 +124,7 @@ the Anthropic console — the CME runs on Haiku 4.5 and costs ~$0.003 per reflec
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install anthropic httpx python-dotenv fastapi 'uvicorn[standard]'
+.venv/bin/pip install anthropic httpx python-dotenv fastapi 'uvicorn[standard]' rich
 cd backend
 ../.venv/bin/uvicorn app.main:app --port 8400 --reload
 ```
@@ -115,7 +139,13 @@ npm install
 npm run dev -- --port 5199    # → http://localhost:5199
 ```
 
-**4. (Recommended) Seed the 30-day demo history**
+**4. The terminal agent**
+
+```bash
+./legacy        # from the repo root — or from any git repo you're working in
+```
+
+**5. (Recommended) Seed the 30-day demo history**
 
 A fresh graph is empty — the report engines need behavior to reason about.
 This ingests 16 realistic backdated reflections (~16 Haiku calls, ≈5¢) and

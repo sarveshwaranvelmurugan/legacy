@@ -5,7 +5,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+# Primary: project-root .env. Fallback: ~/Downloads/env (user keeps keys there).
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+if "COGNEE_API_KEY" not in os.environ:
+    load_dotenv(Path.home() / "Downloads" / "env")
 
 COGNEE_API_KEY = os.environ["COGNEE_API_KEY"]
 COGNEE_BASE_URL = os.environ["COGNEE_BASE_URL"].rstrip("/")
