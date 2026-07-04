@@ -181,8 +181,33 @@ def main() -> None:
             (_remember if _route(line) == "R" else _answer)(line)
 
 
+def one_shot(argv: list[str]) -> None:
+    """Non-interactive mode for scripts and other agents (e.g. Claude Code):
+        legacy ask <question>      answer from graph memory, then exit
+        legacy remember <text>     distill + store, then exit
+        legacy observe             observe cwd workspace, then exit
+        legacy report              full report, then exit
+    """
+    cmd, rest = argv[0], " ".join(argv[1:])
+    if cmd == "ask" and rest:
+        _answer(rest)
+    elif cmd == "remember" and rest:
+        _remember(rest)
+    elif cmd == "observe":
+        seen = observer.look(Path.cwd())
+        console.print(seen["summary"] if seen else "not a git repository — nothing to observe")
+    elif cmd == "report":
+        _report()
+    else:
+        console.print("usage: legacy [ask <q> | remember <text> | observe | report]")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     try:
-        main()
+        if len(sys.argv) > 1:
+            one_shot(sys.argv[1:])
+        else:
+            main()
     except KeyboardInterrupt:
         sys.exit(0)

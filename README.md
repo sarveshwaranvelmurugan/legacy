@@ -52,6 +52,20 @@ remembers it (git history = verified evidence). It primes itself from the graph,
 asks the question it's been holding, then you just type: statements become
 memory, questions are answered from memory. `/report` runs all engines inline.
 
+## Other agents can remember through Legacy too
+
+Claude Code forgets everything between chats. Drop the skill from
+[`integrations/claude-code/`](integrations/claude-code) into `~/.claude/skills/legacy/`
+and every new Claude Code session can reach your memory:
+
+- you ask a fresh chat *"what was I working on last week?"* → Claude runs
+  `legacy ask …` and answers from your graph
+- you tell it *"I finished the project"* → Claude logs it via `legacy remember …`
+  and records the repo's git state as verified evidence via `legacy observe`
+
+One-shot commands (`legacy ask | remember | observe | report`) make Legacy a
+memory layer any tool can call — your coding agent is amnesiac; your memory agent isn't.
+
 ## Why it's an agent, not an app
 
 - **Perceives — ambiently.** The CLI observes your actual workspace (git) on every launch, unasked. Daily reflections and a GitHub adapter add the rest; git-verified evidence (confidence 0.9) vs self-reported claims (0.3) — the graph knows the difference.
