@@ -157,73 +157,6 @@ function SourcesPanel() {
   )
 }
 
-/* --------------------------------- reflect -------------------------------- */
-
-function ReflectScreen() {
-  const [text, setText] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState(null)
-
-  const submit = async () => {
-    if (!text.trim() || busy) return
-    setBusy(true); setResult(null); setError(null)
-    try {
-      setResult(await api('/reflect', { method: 'POST', body: JSON.stringify({ text }) }))
-    } catch (e) { setError(e) }
-    setBusy(false)
-  }
-
-  return (
-    <div className="space-y-5">
-      <Section kicker="daily reflection" title="What did you actually do today?">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={5}
-          placeholder="Two minutes of honesty. Legacy distills it into typed memory before Cognee ever sees it…"
-          className="w-full bg-[#0d0e12] border border-[#2a2c34] rounded-lg p-3 text-sm text-[#d7d3cb] placeholder-[#565a68] focus:outline-none focus:border-[#4a4e5e] resize-none"
-        />
-        <button
-          onClick={submit}
-          disabled={busy}
-          className="mt-3 px-5 py-2 rounded-lg bg-[#f0ede6] text-[#0d0e12] text-sm font-medium hover:bg-white disabled:opacity-40 transition"
-        >
-          {busy ? 'Distilling…' : 'Remember this'}
-        </button>
-        <div className="mt-3"><ErrorNote error={error} onRetry={submit} /></div>
-      </Section>
-
-      {result && (
-        <Section kicker="compact memory engine" title={`${result.nodes.length} node(s) extracted — noise discarded`}>
-          {result.nodes.length === 0 && <p className="text-sm text-[#8b8fa3]">{result.message}</p>}
-          <div className="space-y-2">
-            {result.nodes.map((n, i) => (
-              <div key={i} className={`border rounded-lg px-3 py-2 text-sm ${NODE_STYLES[n.type] || ''}`}>
-                <span className="font-mono text-[11px] mr-2 opacity-80">[{n.type}]</span>
-                {n.text}
-                <span className="font-mono text-[11px] ml-2 opacity-60">conf {n.confidence}</span>
-              </div>
-            ))}
-          </div>
-          {result.nodes.length > 0 && (
-            <p className="text-xs text-[#6b6f80] mt-3">
-              Ingested via cognee.remember() — the graph is rebuilding in the background.
-              {result.agent_will_ask && (
-                <span className="block mt-1 text-amber-400/80">
-                  Legacy noticed a pattern forming — a new hypothesis will be waiting in your report.
-                </span>
-              )}
-            </p>
-          )}
-        </Section>
-      )}
-
-      <SourcesPanel />
-    </div>
-  )
-}
-
 /* -------------------------------- hypotheses ------------------------------- */
 
 function HypothesisCard({ hyp }) {
@@ -362,7 +295,8 @@ function ReportScreen() {
       {!report && (
         <div className="text-center py-16">
           <p className="text-[#8b8fa3] text-sm mb-5">
-            Four reasoning engines traverse your knowledge graph and tell you, honestly,
+            Storage remembers. A real memory <em>notices</em>. Four engines traverse your
+            graph and tell you, honestly,
             <br />whether you are becoming who you said you wanted to be.
           </p>
           <button
@@ -439,9 +373,6 @@ function ReportScreen() {
             </p>
           </Section>
 
-          <Section kicker="cognee.forget() · conscious closure" title="Let a Goal Go">
-            <CloseGoal />
-          </Section>
         </>
       )}
     </div>
@@ -633,6 +564,53 @@ function ChatScreen() {
   )
 }
 
+/* ---------------------------------- profile -------------------------------- */
+
+const TYPE_LABELS = {
+  GOAL: 'goals', ACTION: 'actions', CLAIM: 'claims', EVIDENCE: 'verified evidence',
+  CONTRADICTION: 'contradictions', PREFERENCE: 'preferences', FACT: 'facts',
+  PROJECT: 'project knowledge', CALIBRATION: 'calibrations',
+}
+
+function ProfileScreen() {
+  const [profile, setProfile] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    api('/profile').then(setProfile).catch(setError)
+  }, [])
+
+  return (
+    <div className="space-y-5">
+      <Section kicker="from the graph, nothing else" title="What Legacy Knows About You">
+        {error && <ErrorNote error={error} />}
+        {!profile && !error && <Skeleton lines={8} />}
+        {profile && (
+          <>
+            <Markdown text={profile.narrative} />
+            <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-[#23252d]">
+              <span className="text-[11px] font-mono text-[#6b6f80] px-2 py-1">
+                {profile.memory_stats.total_nodes} memories since {profile.memory_stats.since}
+              </span>
+              {Object.entries(profile.memory_stats.by_type).map(([t, n]) => (
+                <span key={t} className={`text-[11px] font-mono px-2 py-1 rounded-md border ${NODE_STYLES[t] || 'border-[#2a2c34] text-[#8b8fa3]'}`}>
+                  {n} {TYPE_LABELS[t] || t.toLowerCase()}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+      </Section>
+
+      <SourcesPanel />
+
+      <Section kicker="cognee.forget() · your memory, your rules" title="Let a Goal Go">
+        <CloseGoal />
+      </Section>
+    </div>
+  )
+}
+
 /* ----------------------------------- app ----------------------------------- */
 
 export default function App() {
@@ -648,10 +626,10 @@ export default function App() {
           <span className="font-mono text-[11px] text-[#565a68]">memory by cognee</span>
         </div>
         <p className="text-sm text-[#8b8fa3] mt-1 italic font-serif">
-          Are you becoming who you said you wanted to be?
+          The AI that actually knows you.
         </p>
         <nav className="flex gap-1 mt-6 border-b border-[#23252d]">
-          {[['chat', 'Chat'], ['reflect', 'Reflect'], ['report', '30-Day Report'], ['graph', 'Memory Graph']].map(([id, label]) => (
+          {[['chat', 'Chat'], ['profile', 'Profile'], ['report', 'Insights'], ['graph', 'Memory Graph']].map(([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -668,7 +646,7 @@ export default function App() {
       </header>
 
       {tab === 'chat' && <ChatScreen />}
-      {tab === 'reflect' && <ReflectScreen />}
+      {tab === 'profile' && <ProfileScreen />}
       {tab === 'report' && <ReportScreen />}
       {tab === 'graph' && <GraphScreen />}
 

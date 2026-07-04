@@ -76,6 +76,41 @@ def reflect(r: Reflection, background: BackgroundTasks):
     return {"nodes": nodes, "memory_strings": strings, "agent_will_ask": will_ask}
 
 
+@app.get("/profile")
+def profile():
+    """What Legacy knows about you — identity as the graph sees it."""
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        who = pool.submit(
+            cognee_client.recall,
+            "Build a profile of this user from everything in the graph: who they are, "
+            "their interests and preferences, personal facts, current projects, "
+            "strengths (domains with lots of verified activity), and weak spots "
+            "(things they talk about but rarely do).",
+            (
+                "You are Legacy describing the person you know. Output markdown with "
+                "exactly these five short sections, headed: **Who you are**, "
+                "**Preferences & facts**, **Projects**, **Strengths**, **Weak spots**. "
+                "2-4 bullets each, specific, with dates/numbers where the graph has them. "
+                "Address the user as 'you', warmly but honestly."
+            ),
+        )
+        alignment = ledger.alignment()
+        stats = pool.submit(lambda: None)
+    entries = ledger.load()
+    by_type = {}
+    for e in entries:
+        by_type[e["type"]] = by_type.get(e["type"], 0) + 1
+    return {
+        "narrative": who.result(),
+        "alignment": alignment,
+        "memory_stats": {
+            "total_nodes": len(entries),
+            "by_type": by_type,
+            "since": min((e["date"] for e in entries), default=None),
+        },
+    }
+
+
 class ChatTurn(BaseModel):
     messages: list[dict]  # [{role: user|assistant, content: str}, ...]
 
