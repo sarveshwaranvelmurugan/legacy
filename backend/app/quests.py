@@ -106,13 +106,29 @@ def _generate() -> list[dict]:
     return quests
 
 
+def journey() -> list[dict]:
+    """Cumulative XP per day — the deterministic shape of your month."""
+    entries = sorted(
+        (e for e in ledger.load() if e["type"] in ("ACTION", "EVIDENCE")),
+        key=lambda e: e["date"],
+    )
+    days: dict[str, int] = {}
+    for e in entries:
+        days[e["date"]] = days.get(e["date"], 0) + (25 if e["type"] == "EVIDENCE" else 10)
+    out, total = [], 0
+    for d in sorted(days):
+        total += days[d]
+        out.append({"date": d, "xp": total, "gained": days[d]})
+    return out
+
+
 def today() -> dict:
     """Today's quest board (generated once per day) + the character sheet."""
     state = json.loads(_STORE.read_text()) if _STORE.exists() else {}
     if state.get("date") != date.today().isoformat():
         state = {"date": date.today().isoformat(), "quests": _generate()}
         _STORE.write_text(json.dumps(state, indent=2))
-    return {**state, "levels": domain_levels()}
+    return {**state, "levels": domain_levels(), "journey": journey()}
 
 
 # ---------------------------------------------------------------- verification

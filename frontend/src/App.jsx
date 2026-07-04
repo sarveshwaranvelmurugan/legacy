@@ -613,6 +613,50 @@ function ProfileScreen() {
 
 /* ---------------------------------- quests --------------------------------- */
 
+function JourneyChart({ journey }) {
+  const [hover, setHover] = useState(null)
+  if (!journey || journey.length < 2) return null
+  const W = 860, H = 130, PAD = 8
+  const xs = journey.map((_, i) => PAD + (i * (W - 2 * PAD)) / (journey.length - 1))
+  const maxXp = journey[journey.length - 1].xp
+  const ys = journey.map((d) => H - PAD - (d.xp / maxXp) * (H - 2 * PAD))
+  const line = xs.map((x, i) => `${i ? 'L' : 'M'}${x},${ys[i]}`).join(' ')
+  const area = `${line} L${xs[xs.length - 1]},${H} L${xs[0]},${H} Z`
+  const approxLen = 1200
+
+  return (
+    <div className="relative">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 130 }}
+           onMouseLeave={() => setHover(null)}>
+        <path d={area} fill="rgba(52,211,153,0.10)" className="journey-area" />
+        <path d={line} fill="none" stroke="#34d399" strokeWidth="2"
+              strokeLinecap="round" className="journey-line"
+              strokeDasharray={approxLen} style={{ '--len': approxLen }} />
+        {journey.map((d, i) => (
+          <g key={d.date} className="journey-dot" style={{ animationDelay: `${0.2 + i * 0.06}s` }}>
+            <circle cx={xs[i]} cy={ys[i]} r="3" fill="#34d399" />
+            <circle cx={xs[i]} cy={ys[i]} r="11" fill="transparent"
+                    onMouseEnter={() => setHover({ ...d, x: xs[i], y: ys[i] })} />
+          </g>
+        ))}
+        {hover && <line x1={hover.x} y1={PAD} x2={hover.x} y2={H - PAD}
+                        stroke="rgba(139,143,163,0.35)" strokeWidth="1" />}
+      </svg>
+      {hover && (
+        <div className="absolute pointer-events-none bg-[#1a1c22] border border-[#2a2c34] rounded-md px-2.5 py-1.5 text-[11px] font-mono text-[#d7d3cb]"
+             style={{ left: `${(hover.x / W) * 100}%`, top: 0, transform: 'translateX(-50%)' }}>
+          {hover.date} · {hover.xp} xp <span className="text-emerald-400">+{hover.gained}</span>
+        </div>
+      )}
+      <div className="flex justify-between text-[10px] font-mono text-[#565a68] mt-1">
+        <span>{journey[0].date}</span>
+        <span className="text-[#8b8fa3]">{maxXp} xp earned — every point is a verified day</span>
+        <span>{journey[journey.length - 1].date}</span>
+      </div>
+    </div>
+  )
+}
+
 const VERIFY_LABEL = { github: 'proven by commit', leetcode: 'proven by solve', chat: 'proven in chat' }
 
 function QuestCard({ quest, onVerified }) {
@@ -631,8 +675,10 @@ function QuestCard({ quest, onVerified }) {
   }
 
   const done = quest.status === 'DONE' || verdict?.done
+  const justDone = verdict?.done
   return (
-    <div className={`border rounded-xl p-4 space-y-2 ${done ? 'border-emerald-900 bg-emerald-950/30' : 'border-[#2a2c34] bg-[#121318]'}`}>
+    <div className={`relative border rounded-xl p-4 space-y-2 ${done ? 'border-emerald-900 bg-emerald-950/30' : 'border-[#2a2c34] bg-[#121318]'} ${justDone ? 'quest-glow' : ''}`}>
+      {justDone && <span className="xp-pop right-4 top-2 font-mono text-emerald-300 text-sm">+{quest.xp} xp</span>}
       <div className="flex items-start justify-between gap-3">
         <div className="text-sm text-[#e8e4da] font-medium">{done ? '✓ ' : ''}{quest.title}</div>
         <span className="font-mono text-xs text-amber-300 shrink-0">+{quest.xp} xp</span>
@@ -684,6 +730,11 @@ function QuestsScreen() {
             ))}
           </div>
         )}
+      </Section>
+
+      <Section kicker="cumulative verified xp · hover any day" title="Your Journey">
+        {!board && !error && <Skeleton lines={3} />}
+        {board && <JourneyChart journey={board.journey} />}
       </Section>
 
       <Section kicker="generated from your graph · no checkboxes, only receipts" title="Today's Quests">
