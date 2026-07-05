@@ -152,7 +152,7 @@ def main() -> None:
                 "In 3 short lines: what is this user currently working on, which goals "
                 "are healthy, and which are being neglected? Be specific and terse.",
                 system_prompt="You are Legacy priming a terminal session. Max 3 lines, no preamble.",
-                timeout_s=45.0,
+                timeout_s=90.0,
             )
             console.print(Panel(Markdown(primer), title="legacy remembers", title_align="left", border_style="dim"))
         except Exception:
