@@ -28,6 +28,47 @@ Every AI resets. Every session starts at zero. You've told your chatbot your goa
 
 ---
 
+## What Legacy remembers — the memory model
+
+Every memory is a **typed, dated, confidence-scored node** in the graph. Ten types
+across five layers — and the type system *is* the trust model:
+
+**Intent — what you want**
+| | |
+|---|---|
+| `GOAL` | a commitment, with status — *"interview-ready by August. OPEN."* |
+| `CLAIM` | what you *say* about yourself, no proof attached — enters at **0.3 confidence**; unbacked claims age into contradiction fuel |
+
+**Behavior — what you do**
+| | |
+|---|---|
+| `ACTION` | something you actually did, dated — *"solved 2 LeetCode mediums, 06-22"* |
+| `EVIDENCE` | a *verifiable* action from an external source (git commit, accepted solve) — enters at **0.9**, worth 2.5× an action in quest XP |
+| `CONTRADICTION` | a recorded say/do gap with severity — some admitted, some *found* by cross-referencing claims against absent evidence |
+
+**Identity — who you are**
+| | |
+|---|---|
+| `PREFERENCE` | durable likes and choices — *"favourite bike: Hunter 350"* |
+| `FACT` | durable personal context — *"rides 12km daily; placements start September"* |
+
+**Work — what you build**
+| | |
+|---|---|
+| `PROJECT` | a studied project: stack, architecture, patterns (`legacy learn`) — powers *"build it like my last app"* |
+| `WORKFLOW` | how things are done: commands, rituals, conventions, distilled from coding sessions — *"go tests need config/ copied into the service folder first"* |
+
+**Learning — how memory corrects itself**
+| | |
+|---|---|
+| `CALIBRATION` | a record of you pushing back on Legacy's hypotheses — confidence recalibrated, your context becomes new memory |
+
+A bare claim enters at 0.3; verified evidence at 0.9 — **the graph itself knows
+the difference between what you say and what you've proven.** The Profile tab
+shows your live counts per type, straight from the ledger.
+
+---
+
 ## What it does
 
 **Talk to it.** `./legacy` is a real conversation — ask it to analyze your new bike, plan a trip, review an idea. It answers like a capable assistant, reaches into your memory graph when your past matters, and quietly distills the durable parts of every exchange (preferences, facts, decisions) into permanent memory. Tell it about your bike today; ask "what's my favourite bike?" in a fresh session next week — it knows.
