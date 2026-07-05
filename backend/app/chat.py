@@ -82,6 +82,7 @@ def converse(history: list[dict], on_status=None) -> str:
                         "Return the relevant facts about this user from the graph, dense "
                         "and factual, with dates where present. If nothing relevant, say so."
                     ),
+                    timeout_s=90.0,
                 )
             except Exception as e:
                 recalled = f"memory lookup failed ({type(e).__name__}) — answer from the conversation alone"

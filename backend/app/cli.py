@@ -64,16 +64,21 @@ def _remember(text: str) -> None:
 def _answer(question: str) -> None:
     with console.status("[dim]traversing the graph…[/]"):
         scores = ledger.consistency_report()
-        reply = cognee_client.recall(
-            f"Exact authoritative action counts per goal:\n{scores}\n\n"
-            f"The user asks: {question}",
-            system_prompt=(
-                "You are Legacy, a mentor with perfect memory of this user's goals, "
-                "actions, claims and contradictions. Answer directly and briefly "
-                "(under 120 words), grounded in the graph and the counts. Be candid; "
-                "cite dates and numbers when they matter."
-            ),
-        )
+        try:
+            reply = cognee_client.recall(
+                f"Exact authoritative action counts per goal:\n{scores}\n\n"
+                f"The user asks: {question}",
+                system_prompt=(
+                    "You are Legacy, a mentor with perfect memory of this user's goals, "
+                    "actions, claims and contradictions. Answer directly and briefly "
+                    "(under 120 words), grounded in the graph and the counts. Be candid; "
+                    "cite dates and numbers when they matter."
+                ),
+                timeout_s=120.0,
+            )
+        except Exception:
+            reply = ("Memory is busy consolidating new nodes right now — "
+                     "try again in a minute.")
     console.print(Panel(Markdown(reply), border_style="dim", title="legacy", title_align="left"))
 
 
@@ -136,23 +141,32 @@ remembers the durable parts of every exchange.
 
 def main() -> None:
     console.print()
-    console.print("[bold]Legacy[/][green].[/] [dim italic]are you becoming who you said you wanted to be?[/]")
+    console.print("[bold]Legacy[/][green].[/] [dim italic]the AI that actually knows you.[/]")
 
-    # 1. Ambient perception: look at where the user is working.
+    # 1. Session priming FIRST — observing afterwards means our own ingest's
+    # cognify can't block this recall. Bounded: memory being busy must never
+    # hang the terminal.
+    with console.status("[dim]remembering you…[/]"):
+        try:
+            primer = cognee_client.recall(
+                "In 3 short lines: what is this user currently working on, which goals "
+                "are healthy, and which are being neglected? Be specific and terse.",
+                system_prompt="You are Legacy priming a terminal session. Max 3 lines, no preamble.",
+                timeout_s=45.0,
+            )
+            console.print(Panel(Markdown(primer), title="legacy remembers", title_align="left", border_style="dim"))
+        except Exception:
+            console.print("[dim]◌ memory is consolidating right now — continuing without the primer.[/]")
+
+    # 2. Ambient perception (ingests + rebuilds the graph in the background).
     with console.status("[dim]looking around…[/]"):
-        seen = observer.look(Path.cwd())
+        try:
+            seen = observer.look(Path.cwd())
+        except Exception:
+            seen = None
     if seen:
         style = "green" if seen["new"] else "dim"
         console.print(f"[{style}]◉ observed: {seen['summary']}[/]")
-
-    # 2. Session priming: what does the graph already know?
-    with console.status("[dim]remembering you…[/]"):
-        primer = cognee_client.recall(
-            "In 3 short lines: what is this user currently working on, which goals "
-            "are healthy, and which are being neglected? Be specific and terse.",
-            system_prompt="You are Legacy priming a terminal session. Max 3 lines, no preamble.",
-        )
-    console.print(Panel(Markdown(primer), title="legacy remembers", title_align="left", border_style="dim"))
 
     # 3. Agent initiative: if Legacy has been holding a question, ask it now.
     for hyp in engines.pending_hypotheses():

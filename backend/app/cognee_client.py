@@ -98,8 +98,11 @@ def recall(
     dataset: str = config.DATASET_NAME,
     top_k: int = 20,
     only_context: bool = False,
+    timeout_s: float | None = None,
 ) -> str:
-    """Query the knowledge graph. Returns the completion text (or raw context)."""
+    """Query the knowledge graph. Returns the completion text (or raw context).
+    Pass timeout_s to bound interactive paths — recall can block while the
+    dataset is mid-cognify."""
     body: dict[str, Any] = {
         "query": query,
         "datasets": [dataset],
@@ -109,7 +112,8 @@ def recall(
     }
     if system_prompt:
         body["systemPrompt"] = system_prompt
-    r = _client.post("/api/v1/recall", json=body)
+    timeout = httpx.Timeout(timeout_s, connect=20.0) if timeout_s else None
+    r = _client.post("/api/v1/recall", json=body, timeout=timeout)
     r.raise_for_status()
     results = r.json()
     if not results:
