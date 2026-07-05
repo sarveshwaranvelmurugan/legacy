@@ -61,7 +61,12 @@ def hook_project(project: Path | None = None) -> list[str]:
     return installed
 
 
-PYTHON = str(REPO_ROOT / ".venv" / "bin" / "python")
+import sys as _sys
+
+if _sys.platform == "win32":
+    PYTHON = str(REPO_ROOT / ".venv" / "Scripts" / "python.exe")
+else:
+    PYTHON = str(REPO_ROOT / ".venv" / "bin" / "python")
 BACKEND = str(REPO_ROOT / "backend")
 
 
@@ -84,17 +89,21 @@ def mcp_configs() -> dict:
 def setup_mcp() -> tuple[bool, str]:
     """Try to register the MCP server with Claude Code; return (ok, command)."""
     import subprocess
-    cmd = mcp_configs()["claude"]
+    display = mcp_configs()["claude"]
+    argv = ["claude", "mcp", "add", "-s", "user", "legacy",
+            "-e", f"PYTHONPATH={BACKEND}", "--", PYTHON, "-m", "app.mcp_server"]
     try:
-        out = subprocess.run(cmd.split(), capture_output=True, text=True, timeout=30)
-        return out.returncode == 0, cmd
+        out = subprocess.run(argv, capture_output=True, text=True, timeout=30,
+                             shell=False)
+        return out.returncode == 0, display
     except Exception:
-        return False, cmd
+        return False, display
 
 
 # ------------------------------------------------------------- autocapture
 FLAG = Path.home() / ".legacy" / "autocapture"
-HOOK_CMD = str(REPO_ROOT / "scripts" / "legacy_session_end.sh")
+HOOK_CMD = f'"{PYTHON}" "{REPO_ROOT / "scripts" / "legacy_session_end.py"}"'
+_OLD_HOOK_CMD = str(REPO_ROOT / "scripts" / "legacy_session_end.sh")
 SETTINGS = Path.home() / ".claude" / "settings.json"
 
 
@@ -106,6 +115,16 @@ def _hook_installed(settings: dict) -> bool:
     return False
 
 
+def _remove_old_hook(settings: dict) -> None:
+    """Drop the legacy zsh hook entry if present (pre-Windows-support installs)."""
+    for entry in settings.get("hooks", {}).get("SessionEnd", []):
+        entry["hooks"] = [h for h in entry.get("hooks", [])
+                          if h.get("command") != _OLD_HOOK_CMD]
+    if "hooks" in settings and "SessionEnd" in settings["hooks"]:
+        settings["hooks"]["SessionEnd"] = [
+            e for e in settings["hooks"]["SessionEnd"] if e.get("hooks")]
+
+
 def install_autocapture_hook() -> bool:
     """Merge our SessionEnd hook into ~/.claude/settings.json (backup first).
     Returns True if newly installed, False if it was already there."""
@@ -114,6 +133,7 @@ def install_autocapture_hook() -> bool:
     if SETTINGS.exists():
         settings = json.loads(SETTINGS.read_text() or "{}")
         SETTINGS.with_suffix(".json.legacy-bak").write_text(json.dumps(settings, indent=2))
+    _remove_old_hook(settings)
     if _hook_installed(settings):
         return False
     settings.setdefault("hooks", {}).setdefault("SessionEnd", []).append(

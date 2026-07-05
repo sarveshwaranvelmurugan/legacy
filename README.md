@@ -169,10 +169,15 @@ the Anthropic console — the CME runs on Haiku 4.5 and costs ~$0.003 per reflec
 **2. Backend** (FastAPI on :8400)
 
 ```bash
+# macOS / Linux
 python3 -m venv .venv
 .venv/bin/pip install -r backend/requirements.txt
-cd backend
-../.venv/bin/uvicorn app.main:app --port 8400 --reload
+cd backend && ../.venv/bin/uvicorn app.main:app --port 8400 --reload
+
+# Windows (PowerShell)
+python -m venv .venv
+.venv\Scripts\pip install -r backend\requirements.txt
+cd backend; ..\.venv\Scripts\uvicorn app.main:app --port 8400 --reload
 ```
 
 Sanity check: `curl http://localhost:8400/health` → `{"status":"ok", ...}`
@@ -188,7 +193,7 @@ npm run dev -- --port 5199    # → http://localhost:5199
 **4. The terminal agent — then go full mode**
 
 ```bash
-./legacy                                  # interactive: observes, primes, chats
+./legacy                                  # interactive: observes, primes, chats   (Windows: legacy.bat)
 ./legacy setup                            # install the Claude Code skill globally
 ./legacy hook                             # run inside any project: wire Cursor + AGENTS.md
 ./legacy connect github <username>        # opt a source in (login)
