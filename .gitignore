@@ -21,3 +21,5 @@ backend/ledger.jsonl
 test-results/
 backend/sources.json
 backend/quests.json
+docs/DEMO_SCRIPT.md
+docs/DEMO_RUNNER_SETUP.md

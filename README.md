@@ -221,7 +221,6 @@ one command to disable, and the hook reads only git metadata.
 
 **5. Connecting to an existing Cognee dataset?** Rebuild the local score
 ledger first: `cd backend && ../.venv/bin/python backfill_ledger.py`
-(recording the demo? full runbook: [docs/DEMO_RUNNER_SETUP.md](docs/DEMO_RUNNER_SETUP.md))
 
 **6. (Recommended) Seed the 30-day demo history**
 
