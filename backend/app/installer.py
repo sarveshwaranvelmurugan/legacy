@@ -88,14 +88,24 @@ def mcp_configs() -> dict:
 
 def setup_mcp() -> tuple[bool, str]:
     """Try to register the MCP server with Claude Code; return (ok, command)."""
+    import shutil
     import subprocess
     display = mcp_configs()["claude"]
-    argv = ["claude", "mcp", "add", "-s", "user", "legacy",
+    claude = (shutil.which("claude") or shutil.which("claude.cmd")
+              or next((str(c) for c in (
+                  Path.home() / ".claude" / "local" / "claude",
+                  Path("/usr/local/bin/claude"),
+                  Path("/opt/homebrew/bin/claude"),
+              ) if c.exists()), None))
+    if not claude:
+        return False, display
+    argv = [claude, "mcp", "add", "-s", "user", "legacy",
             "-e", f"PYTHONPATH={BACKEND}", "--", PYTHON, "-m", "app.mcp_server"]
     try:
         out = subprocess.run(argv, capture_output=True, text=True, timeout=30,
                              shell=False)
-        return out.returncode == 0, display
+        ok = out.returncode == 0 or "already exists" in (out.stdout + out.stderr)
+        return ok, display
     except Exception:
         return False, display
 
