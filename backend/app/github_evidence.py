@@ -32,7 +32,7 @@ def fetch_push_evidence(username: str | None = None, limit: int = 10) -> list[st
         repo = event["repo"]["name"]
         day = event["created_at"][:10]
         commits = event["payload"].get("commits", [])
-        msgs = "; ".join(c["message"].splitlines()[0] for c in commits[:3])
+        msgs = "; ".join(((c.get("message") or "").splitlines() or [""])[0] for c in commits[:3])
         strings.append(
             f"[EVIDENCE] user shanks pushed {len(commits)} commit(s) to {repo} "
             f"({msgs}). date {day}. source github. verified true. confidence 0.9."

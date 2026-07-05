@@ -52,6 +52,8 @@ def look(cwd: Path | None = None) -> dict | None:
     repo = Path(root).name
     branch = _git(["rev-parse", "--abbrev-ref", "HEAD"], cwd)
     head = _git(["rev-parse", "--short", "HEAD"], cwd)
+    if not head:
+        return None  # repo with no commits yet — nothing meaningful to observe
     commits_24h = _git(["log", "--since=24 hours ago", "--oneline"], cwd)
     dirty = _git(["status", "--porcelain"], cwd)
     today = date.today().isoformat()
@@ -68,7 +70,8 @@ def look(cwd: Path | None = None) -> dict | None:
         f"in the git repository '{repo}' on branch '{branch}'."
     )
     if commit_lines:
-        msgs = "; ".join(line.split(" ", 1)[1] for line in commit_lines[:5])
+        msgs = "; ".join(
+            (line.split(" ", 1) + ["(no message)"])[1] for line in commit_lines[:5])
         observation += (
             f" {len(commit_lines)} commit(s) in the last 24 hours: {msgs}. "
             "This is verified evidence from git history."

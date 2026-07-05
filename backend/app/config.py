@@ -36,3 +36,18 @@ def _getaddrinfo_with_pin(host, *args, **kwargs):
 
 
 socket.getaddrinfo = _getaddrinfo_with_pin
+
+
+def parse_structured(response, key: str):
+    """Extract and parse a structured-output JSON response defensively.
+    Raises RuntimeError with a clear message on refusal/truncation."""
+    import json as _json
+    text = next((b.text for b in response.content if b.type == "text"), "")
+    if not text:
+        raise RuntimeError("model returned no output (possibly refused) — try again")
+    if response.stop_reason == "max_tokens":
+        raise RuntimeError("model output was truncated — try again")
+    try:
+        return _json.loads(text)[key]
+    except (ValueError, KeyError) as e:
+        raise RuntimeError(f"model returned malformed output — try again ({e})") from e

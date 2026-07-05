@@ -27,8 +27,6 @@ def remember(memory_strings: list[str], dataset: str = config.DATASET_NAME) -> d
     from . import ledger
     # de-dupe within the batch; Cognee 409s on identical duplicate documents
     memory_strings = list(dict.fromkeys(memory_strings))
-    for s in memory_strings:
-        ledger.append(s)
     r = None
     for attempt in range(3):
         r = _client.post(
@@ -41,10 +39,13 @@ def remember(memory_strings: list[str], dataset: str = config.DATASET_NAME) -> d
         )
         if r.status_code != 409:
             break
-        # 409 = dataset busy with a previous cognify — wait it out and retry
-        wait_for_processing(timeout_s=120)
+        # 409 = dataset busy (or duplicate content) — short wait, then retry
+        wait_for_processing(timeout_s=30)
         time.sleep(2 * (attempt + 1))
     r.raise_for_status()
+    # ledger records only what the graph actually accepted, and never twice
+    for s in memory_strings:
+        ledger.append_unique(s)
     ingest = r.json()
 
     r = _client.post(
@@ -55,8 +56,23 @@ def remember(memory_strings: list[str], dataset: str = config.DATASET_NAME) -> d
     return {"ingest": ingest, "cognify": r.json()}
 
 
+_OWN_DATASET_ID: str | None = None
+
+
+def _own_dataset_id() -> str | None:
+    global _OWN_DATASET_ID
+    if _OWN_DATASET_ID is None:
+        try:
+            _OWN_DATASET_ID = next(
+                (d["id"] for d in list_datasets() if d["name"] == config.DATASET_NAME), "")
+        except Exception:
+            return None
+    return _OWN_DATASET_ID or None
+
+
 def wait_for_processing(dataset_id: str | None = None, timeout_s: int = 600) -> str:
-    """Poll dataset status until cognify completes."""
+    """Poll dataset status until cognify completes (scoped to our dataset)."""
+    dataset_id = dataset_id or _own_dataset_id()
     deadline = time.time() + timeout_s
     status = "UNKNOWN"
     while time.time() < deadline:

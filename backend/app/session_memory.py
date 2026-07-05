@@ -73,12 +73,12 @@ def distill_text(session_text: str, source: str = "session", project_hint: str =
               f"Session excerpt:\n{session_text[:14000]}")
     response = _client.messages.create(
         model=config.CME_MODEL,
-        max_tokens=900,
+        max_tokens=1500,
         system=_SYSTEM,
         output_config={"format": _SCHEMA},
         messages=[{"role": "user", "content": prompt}],
     )
-    facts = json.loads(next(b.text for b in response.content if b.type == "text"))["facts"]
+    facts = config.parse_structured(response, "facts")
     today = date.today().isoformat()
     strings = []
     for f in facts:

@@ -92,7 +92,7 @@ def learn(path: Path | None = None) -> dict:
     )
     response = _claude.messages.create(
         model=config.CME_MODEL,
-        max_tokens=1200,
+        max_tokens=1800,
         system=(
             "You are the project-knowledge distiller for Legacy, a memory agent. "
             "From the metadata, produce dense factual knowledge about this project "
@@ -113,7 +113,10 @@ def learn(path: Path | None = None) -> dict:
         }}},
         messages=[{"role": "user", "content": prompt}],
     )
-    k = json.loads(next(b.text for b in response.content if b.type == "text"))
+    text = next((b.text for b in response.content if b.type == "text"), "")
+    if not text or response.stop_reason == "max_tokens":
+        raise RuntimeError("model output empty or truncated — try again")
+    k = json.loads(text)
 
     today = date.today().isoformat()
     name = meta["name"]

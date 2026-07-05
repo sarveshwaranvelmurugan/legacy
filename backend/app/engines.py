@@ -82,14 +82,25 @@ def behavioral_inference() -> dict:
     )
     try:
         data = json.loads(analysis.strip().removeprefix("```json").removesuffix("```"))
-    except json.JSONDecodeError:
-        data = {"pattern": analysis, "hypothesis": analysis, "supporting_nodes": 0,
-                "confidence": 50, "contradicts_goal": ""}
+        if not isinstance(data, dict):
+            raise ValueError("not an object")
+    except (json.JSONDecodeError, ValueError):
+        data = {}
+    # normalize: free-form recall output is not schema-enforced — never trust shape
+    def _int(v, d):
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return d
     hypothesis = {
         "id": uuid.uuid4().hex[:8],
         "created": _today(),
         "status": "PENDING",
-        **data,
+        "pattern": str(data.get("pattern") or analysis[:300]),
+        "hypothesis": str(data.get("hypothesis") or analysis[:200]),
+        "supporting_nodes": _int(data.get("supporting_nodes"), 0),
+        "confidence": max(1, min(99, _int(data.get("confidence"), 50))),
+        "contradicts_goal": str(data.get("contradicts_goal") or ""),
     }
     _save_hypothesis(hypothesis)
     return hypothesis
@@ -104,24 +115,24 @@ def respond_to_hypothesis(hypothesis_id: str, response: str, context: str = "") 
         raise KeyError(f"unknown hypothesis {hypothesis_id}")
 
     status = {"accurate": "CONFIRMED", "partial": "PARTIAL", "inaccurate": "REJECTED"}[response]
-    hyp["status"] = status
-    hyp["user_response"] = context
-    _save_all(hyps)
-
-    # Feed the calibration back into the graph: the correction becomes memory.
+    old_conf = hyp.get("confidence", 50)
     delta = {"CONFIRMED": +15, "PARTIAL": -8, "REJECTED": -25}[status]
-    new_conf = max(5, min(98, hyp["confidence"] + delta))
+    new_conf = max(5, min(98, old_conf + delta))
     calibration = (
         f"[CALIBRATION] On {_today()} user shanks marked the hypothesis "
-        f"'{hyp['hypothesis']}' as {status}."
+        f"'{hyp.get('hypothesis', '')}' as {status}."
         + (f" User context: {context}." if context else "")
-        + f" Hypothesis confidence recalibrated from {hyp['confidence']} to {new_conf}."
+        + f" Hypothesis confidence recalibrated from {old_conf} to {new_conf}."
     )
     strings = [calibration]
     # If the user supplied missing context, extract it as real nodes too.
     if context:
         strings += [cme.format_node_for_cognee(n) for n in cme.extract_nodes(context)]
+    # Graph write FIRST — if it fails, the hypothesis stays PENDING and
+    # answerable rather than silently vanishing half-committed.
     cognee_client.remember(strings)
+    hyp["status"] = status
+    hyp["user_response"] = context
     hyp["confidence"] = new_conf
     _save_all(hyps)
     return hyp

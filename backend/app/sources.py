@@ -58,14 +58,20 @@ def sync_github() -> dict:
     if not cfg["username"]:
         return {"error": "Set a GitHub username first."}
 
-    r = httpx.get(
-        f"https://api.github.com/users/{cfg['username']}/events/public",
-        headers={"Accept": "application/vnd.github+json",
-                 "User-Agent": "legacy-agent"},
-        timeout=30,
-    )
+    try:
+        r = httpx.get(
+            f"https://api.github.com/users/{cfg['username']}/events/public",
+            headers={"Accept": "application/vnd.github+json",
+                     "User-Agent": "legacy-agent"},
+            timeout=30,
+        )
+    except httpx.HTTPError as e:
+        return {"error": f"GitHub unreachable ({type(e).__name__}) — check network and retry."}
     if r.status_code == 404:
         return {"error": f"GitHub user '{cfg['username']}' not found."}
+    if r.status_code in (403, 429):
+        return {"error": "GitHub rate limit hit (60 req/hour unauthenticated). "
+                         "Wait a bit and sync again — nothing was lost."}
     r.raise_for_status()
 
     watermark = cfg.get("last_sync_watermark", "")
@@ -84,14 +90,17 @@ def sync_github() -> dict:
         # commit's message directly so evidence is specific and unique per SHA.
         msg = ""
         if head:
-            c = httpx.get(
-                f"https://api.github.com/repos/{repo}/commits/{head}",
-                headers={"Accept": "application/vnd.github+json",
-                         "User-Agent": "legacy-agent"},
-                timeout=20,
-            )
-            if c.status_code == 200:
-                msg = c.json().get("commit", {}).get("message", "").splitlines()[0]
+            try:
+                c = httpx.get(
+                    f"https://api.github.com/repos/{repo}/commits/{head}",
+                    headers={"Accept": "application/vnd.github+json",
+                             "User-Agent": "legacy-agent"},
+                    timeout=20,
+                )
+                if c.status_code == 200:
+                    msg = ((c.json().get("commit", {}).get("message") or "").splitlines() or [""])[0]
+            except httpx.HTTPError:
+                pass  # evidence still records the push; message is a bonus
         strings.append(
             f"[EVIDENCE] user shanks pushed commit {head[:7]} to {repo} "
             f"on branch {branch}: '{msg}'. date {created[:10]}. "
@@ -121,7 +130,8 @@ def sync_leetcode(limit: int = 15) -> dict:
     if not cfg["username"]:
         return {"error": "Set a LeetCode username first."}
 
-    r = httpx.post(
+    try:
+        r = httpx.post(
         "https://leetcode.com/graphql",
         json={"query": _LC_QUERY,
               "variables": {"username": cfg["username"], "limit": limit}},
@@ -129,7 +139,11 @@ def sync_leetcode(limit: int = 15) -> dict:
                  "Referer": "https://leetcode.com",
                  "User-Agent": "Mozilla/5.0 (legacy-agent)"},
         timeout=30,
-    )
+        )
+    except httpx.HTTPError as e:
+        return {"error": f"LeetCode unreachable ({type(e).__name__}) — check network and retry."}
+    if r.status_code == 429:
+        return {"error": "LeetCode is rate-limiting — wait a minute and sync again."}
     r.raise_for_status()
     payload = r.json()
     if payload.get("errors"):

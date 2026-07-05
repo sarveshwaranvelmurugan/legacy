@@ -22,6 +22,18 @@ GOAL_AREAS = {
 }
 
 
+def append_unique(memory_string: str) -> bool:
+    """Append only if this exact string isn't already in the ledger —
+    prevents double-counting when the same content is submitted twice."""
+    if _LEDGER.exists() and any(
+        json.loads(l)["text"] == memory_string
+        for l in _LEDGER.read_text().splitlines() if l.strip()
+    ):
+        return False
+    append(memory_string)
+    return True
+
+
 def append(memory_string: str) -> None:
     m = re.search(r"date (\d{4}-\d{2}-\d{2})", memory_string)
     t = re.match(r"\[(\w+)\]", memory_string)

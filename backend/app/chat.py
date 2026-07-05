@@ -89,7 +89,18 @@ def converse(history: list[dict], on_status=None) -> str:
                             "content": recalled or "no relevant memory found"})
         messages.append({"role": "user", "content": results})
 
-    return "\n".join(p for p in reply_parts if p.strip()) or "(no reply)"
+    final = "\n".join(p for p in reply_parts if p.strip())
+    if not final:
+        # tool budget exhausted mid-search — force a text answer from what we have
+        response = _client.messages.create(
+            model=config.CME_MODEL,
+            max_tokens=1200,
+            system=[{"type": "text", "text": CHAT_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+            messages=messages + [{"role": "user", "content":
+                "(Answer now from the conversation and memory results above — no more lookups.)"}],
+        )
+        final = "\n".join(b.text for b in response.content if b.type == "text").strip()
+    return final or "I lost my train of thought — ask me that again?"
 
 
 def remember_exchange(user_msg: str, reply: str) -> list[dict]:

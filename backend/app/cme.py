@@ -71,7 +71,7 @@ def extract_nodes(reflection: str, reflection_date: str | None = None) -> list[d
     reflection_date = reflection_date or _date.today().isoformat()
     response = _client.messages.create(
         model=config.CME_MODEL,
-        max_tokens=1024,
+        max_tokens=1600,
         system=[{"type": "text", "text": CME_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
         output_config={"format": NODES_SCHEMA},
         messages=[
@@ -81,10 +81,7 @@ def extract_nodes(reflection: str, reflection_date: str | None = None) -> list[d
             }
         ],
     )
-    import json
-
-    text = next(b.text for b in response.content if b.type == "text")
-    nodes = json.loads(text)["nodes"]
+    nodes = config.parse_structured(response, "nodes")
     for n in nodes:
         n["date"] = reflection_date
     return nodes

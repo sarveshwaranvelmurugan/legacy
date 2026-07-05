@@ -85,20 +85,20 @@ def _generate() -> list[dict]:
         "an interest productive. Each must be completable within ~30 minutes today "
         "and provable with a SIMPLE, GENERIC receipt: verify=github (title must be "
         "'Push at least one commit to <repo>' — never reference specific files or "
-        "counts), verify=leetcode (title 'Solve one <difficulty> problem'), or "
+        "counts), verify=leetcode (title 'Solve one LeetCode problem' — never specify difficulty; solves are verified by title and date only), or "
         "verify=chat (explain a named concept to Legacy in conversation). "
         "xp between 20 and 60, weakest area highest. 'why' is one dry, honest "
         "sentence citing the user's own numbers."
     )
     response = _client.messages.create(
         model=config.CME_MODEL,
-        max_tokens=800,
+        max_tokens=1500,
         system=("You are Legacy's quest master — a mentor with perfect memory and "
                 "a dry wit. Personal, specific, never generic. No fantasy language."),
         output_config={"format": _QUEST_SCHEMA},
         messages=[{"role": "user", "content": prompt}],
     )
-    quests = json.loads(next(b.text for b in response.content if b.type == "text"))["quests"]
+    quests = config.parse_structured(response, "quests")
     for q in quests:
         q["id"] = uuid.uuid4().hex[:8]
         q["status"] = "OPEN"
@@ -135,10 +135,17 @@ def today() -> dict:
 def verify(quest_id: str) -> dict:
     """Prove a quest. Syncs evidence sources, then judges strictly against
     today's memory. Success writes a verified ACTION back into the graph."""
-    state = json.loads(_STORE.read_text())
+    if not _STORE.exists():
+        raise KeyError("no quest board yet — load /quests first")
+    try:
+        state = json.loads(_STORE.read_text())
+    except json.JSONDecodeError:
+        raise KeyError("quest board corrupted — refresh /quests")
+    if state.get("date") != date.today().isoformat():
+        raise KeyError("quest board expired — refresh for today's quests")
     quest = next((q for q in state["quests"] if q["id"] == quest_id), None)
     if quest is None:
-        raise KeyError(quest_id)
+        raise KeyError("unknown or expired quest — refresh the board")
     if quest["status"] == "DONE":
         return {"quest": quest, "message": "already proven"}
 
@@ -178,10 +185,12 @@ def verify(quest_id: str) -> dict:
                    f"Quest: {quest['title']} (verify via {quest['verify']})\n\n"
                    f"Today's memory entries:\n" + "\n".join(todays)}],
     )
-    text = next(b.text for b in response.content if b.type == "text")
+    text = next((b.text for b in response.content if b.type == "text"), "")
     try:
         verdict = json.loads(text.strip().removeprefix("```json").removesuffix("```"))
-    except json.JSONDecodeError:
+        if not isinstance(verdict, dict):
+            raise ValueError("not an object")
+    except (json.JSONDecodeError, ValueError):
         verdict = {"done": False, "proof": "judge returned no verdict — try again"}
 
     if verdict.get("done"):

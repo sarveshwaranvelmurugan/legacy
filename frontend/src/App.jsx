@@ -22,6 +22,7 @@ async function api(path, opts = {}) {
     throw new Error(`Backend returned an unreadable response (HTTP ${res.status}).`)
   }
   if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`)
+  if (body && typeof body === 'object' && body.error) throw new Error(body.error)
   return body
 }
 
@@ -77,7 +78,7 @@ function SourceRow({ id, label, hint, cfg, onChange, onSync, busy }) {
   return (
     <div className="flex flex-wrap items-center gap-3 py-2">
       <button
-        onClick={() => onChange({ ...cfg, enabled: !cfg.enabled })}
+        onClick={() => onChange({ ...cfg, enabled: !cfg.enabled }, true)}
         className={`relative w-9 h-5 rounded-full transition shrink-0 ${cfg.enabled ? 'bg-emerald-600' : 'bg-[#2a2c34]'}`}
         title={cfg.enabled ? 'on — Legacy may sync this source' : 'off — Legacy will not touch this source'}
       >
@@ -86,7 +87,8 @@ function SourceRow({ id, label, hint, cfg, onChange, onSync, busy }) {
       <span className="text-sm text-[#d7d3cb] w-20">{label}</span>
       <input
         value={cfg.username}
-        onChange={(e) => onChange({ ...cfg, enabled: cfg.enabled, username: e.target.value })}
+        onChange={(e) => onChange({ ...cfg, username: e.target.value }, false)}
+        onBlur={() => onChange(cfg, true)}
         placeholder={hint}
         className="flex-1 min-w-40 bg-[#0d0e12] border border-[#2a2c34] rounded-md px-3 py-1.5 text-xs text-[#d7d3cb] placeholder-[#565a68] focus:outline-none"
       />
@@ -111,12 +113,13 @@ function SourcesPanel() {
     api('/sources').then(setSettings).catch(setError)
   }, [])
 
-  const save = async (source, cfg) => {
+  const save = async (source, cfg, persist = true) => {
     setError(null)
     const next = { ...settings, [source]: { ...settings[source], ...cfg } }
     setSettings(next)
+    if (!persist) return  // typing updates locally; commit on blur/toggle
     try {
-      await api('/sources', { method: 'POST', body: JSON.stringify({ [source]: cfg }) })
+      await api('/sources', { method: 'POST', body: JSON.stringify({ [source]: next[source] }) })
     } catch (e) { setError(e) }
   }
 
@@ -124,13 +127,12 @@ function SourcesPanel() {
     setBusy(source); setResult(null); setError(null)
     try {
       const r = await api(`/sources/${source}/sync`, { method: 'POST' })
-      if (r.error) setError(new Error(r.error))
-      else setResult({ source, ...r })
+      setResult({ source, ...r })
     } catch (e) { setError(e) }
     setBusy(null)
   }
 
-  if (!settings) return null
+  if (!settings?.github || !settings?.leetcode) return error ? <Section kicker="zero-trust · opt-in" title="Evidence Sources"><ErrorNote error={error} /></Section> : null
   return (
     <Section kicker="zero-trust · opt-in" title="Evidence Sources">
       <p className="text-xs text-[#6b6f80] mb-2">
@@ -138,9 +140,9 @@ function SourcesPanel() {
         as verified evidence (confidence 0.9). Off means off — nothing is read.
       </p>
       <SourceRow id="github" label="GitHub" hint="github username" cfg={settings.github}
-        onChange={(cfg) => save('github', cfg)} onSync={sync} busy={busy === 'github'} />
+        onChange={(cfg, persist) => save('github', cfg, persist)} onSync={sync} busy={busy === 'github'} />
       <SourceRow id="leetcode" label="LeetCode" hint="leetcode username" cfg={settings.leetcode}
-        onChange={(cfg) => save('leetcode', cfg)} onSync={sync} busy={busy === 'leetcode'} />
+        onChange={(cfg, persist) => save('leetcode', cfg, persist)} onSync={sync} busy={busy === 'leetcode'} />
       <ErrorNote error={error} />
       {result && (
         <div className="mt-2 border border-teal-900 bg-teal-950/30 rounded-lg px-3 py-2">
@@ -224,15 +226,17 @@ function CloseGoal() {
   const [goal, setGoal] = useState('')
   const [reason, setReason] = useState('')
   const [done, setDone] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
   const close = async () => {
-    if (!goal.trim()) return
-    setError(null)
+    if (!goal.trim() || busy) return
+    setBusy(true); setError(null)
     try {
       await api('/goal/close', { method: 'POST', body: JSON.stringify({ goal, reason }) })
       setDone(true)
     } catch (e) { setError(e) }
+    setBusy(false)
   }
 
   if (done) {
@@ -248,8 +252,8 @@ function CloseGoal() {
           className="flex-1 min-w-40 bg-[#0d0e12] border border-[#2a2c34] rounded-md px-3 py-2 text-xs text-[#d7d3cb] placeholder-[#565a68] focus:outline-none" />
         <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="why you're letting it go"
           className="flex-[2] min-w-52 bg-[#0d0e12] border border-[#2a2c34] rounded-md px-3 py-2 text-xs text-[#d7d3cb] placeholder-[#565a68] focus:outline-none" />
-        <button onClick={close} className="px-3 py-2 rounded-md border border-[#2a2c34] text-xs text-[#d7d3cb] hover:border-[#4a4e5e] transition">
-          Close goal
+        <button onClick={close} disabled={busy} className="px-3 py-2 rounded-md border border-[#2a2c34] text-xs text-[#d7d3cb] hover:border-[#4a4e5e] disabled:opacity-40 transition">
+          {busy ? 'closing…' : 'Close goal'}
         </button>
       </div>
       <ErrorNote error={error} />
@@ -351,14 +355,14 @@ function ReportScreen() {
           </Section>
 
           <Section kicker="engine 3 · behavioral inference — asks, never tells" title="Hypotheses Awaiting Your Response">
-            {report.hypotheses.length === 0 ? (
+            {(report.hypotheses || []).length === 0 ? (
               <div className="text-sm text-[#8b8fa3]">
                 No pending hypotheses.{' '}
                 <button onClick={newHypothesis} className="underline hover:text-white">Run the inference engine</button>
               </div>
             ) : (
               <div className="space-y-3">
-                {report.hypotheses.map((h) => <HypothesisCard key={h.id} hyp={h} />)}
+                {(report.hypotheses || []).map((h) => <HypothesisCard key={h.id} hyp={h} />)}
               </div>
             )}
           </Section>
@@ -457,7 +461,7 @@ function GraphScreen() {
               ctx.beginPath(); ctx.arc(node.x, node.y, 6, 0, 2 * Math.PI)
               ctx.fillStyle = color; ctx.fill()
             }}
-            nodeLabel={(n) => `<div style="max-width:340px;font-size:11px">${n.type}: ${n.name}</div>`}
+            nodeLabel={(n) => { const esc = String(n.name).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); return `<div style="max-width:340px;font-size:11px">${n.type}: ${esc}</div>` }}
             linkColor={() => 'rgba(120,125,145,0.18)'}
             linkWidth={0.5}
             cooldownTicks={120}
@@ -492,6 +496,7 @@ function ChatScreen() {
     setMessages(next); setBusy(true)
     try {
       const r = await api('/chat', { method: 'POST', body: JSON.stringify({ messages: next.slice(-24) }) })
+      if (!r.reply) throw new Error('Legacy returned an empty reply — try again.')
       setMessages([...next, { role: 'assistant', content: r.reply }])
     } catch (e) {
       setError(e); setMessages(next)
@@ -572,32 +577,43 @@ const TYPE_LABELS = {
   PROJECT: 'project knowledge', CALIBRATION: 'calibrations',
 }
 
+let _profileCache = null
+
 function ProfileScreen() {
-  const [profile, setProfile] = useState(null)
+  const [profile, setProfile] = useState(_profileCache)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    api('/profile').then(setProfile).catch(setError)
-  }, [])
+  const load = (force = false) => {
+    if (_profileCache && !force) return
+    setError(null)
+    if (force) setProfile(null)
+    api('/profile').then((p) => { _profileCache = p; setProfile(p) }).catch(setError)
+  }
+  useEffect(() => { load() }, [])
 
   return (
     <div className="space-y-5">
       <Section kicker="from the graph, nothing else" title="What Legacy Knows About You">
-        {error && <ErrorNote error={error} />}
+        {profile && (
+          <button onClick={() => load(true)} className="float-right text-xs text-[#6b6f80] hover:text-white transition -mt-8">↻ refresh</button>
+        )}
+        {error && <ErrorNote error={error} onRetry={() => load(true)} />}
         {!profile && !error && <Skeleton lines={8} />}
         {profile && (
           <>
             <Markdown text={profile.narrative} />
+            {profile.memory_stats && (
             <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-[#23252d]">
               <span className="text-[11px] font-mono text-[#6b6f80] px-2 py-1">
                 {profile.memory_stats.total_nodes} memories since {profile.memory_stats.since}
               </span>
-              {Object.entries(profile.memory_stats.by_type).map(([t, n]) => (
+              {Object.entries(profile.memory_stats.by_type || {}).map(([t, n]) => (
                 <span key={t} className={`text-[11px] font-mono px-2 py-1 rounded-md border ${NODE_STYLES[t] || 'border-[#2a2c34] text-[#8b8fa3]'}`}>
                   {n} {TYPE_LABELS[t] || t.toLowerCase()}
                 </span>
               ))}
             </div>
+            )}
           </>
         )}
       </Section>
@@ -618,7 +634,7 @@ function JourneyChart({ journey }) {
   if (!journey || journey.length < 2) return null
   const W = 860, H = 130, PAD = 8
   const xs = journey.map((_, i) => PAD + (i * (W - 2 * PAD)) / (journey.length - 1))
-  const maxXp = journey[journey.length - 1].xp
+  const maxXp = Math.max(...journey.map((d) => d.xp), 1)
   const ys = journey.map((d) => H - PAD - (d.xp / maxXp) * (H - 2 * PAD))
   const line = xs.map((x, i) => `${i ? 'L' : 'M'}${x},${ys[i]}`).join(' ')
   const area = `${line} L${xs[xs.length - 1]},${H} L${xs[0]},${H} Z`
@@ -668,8 +684,9 @@ function QuestCard({ quest, onVerified }) {
     setBusy(true); setError(null)
     try {
       const r = await api(`/quests/${quest.id}/verify`, { method: 'POST' })
-      setVerdict(r.verdict || { done: true, proof: r.message })
-      if (r.quest.status === 'DONE') onVerified?.()
+      if (r.verdict) setVerdict(r.verdict)
+      else if (r.message) setVerdict({ done: r.quest?.status === 'DONE', proof: r.message })
+      if (r.quest?.status === 'DONE') onVerified?.()
     } catch (e) { setError(e) }
     setBusy(false)
   }
@@ -717,7 +734,7 @@ function QuestsScreen() {
         {!board && !error && <Skeleton lines={5} />}
         {board && (
           <div className="space-y-2.5">
-            {board.levels.map((l) => (
+            {(board.levels || []).map((l) => (
               <div key={l.domain} className="flex items-center gap-3">
                 <span className="font-mono text-xs text-amber-300 w-12 shrink-0">Lv {l.level}</span>
                 <span className="text-sm text-[#d7d3cb] w-56 shrink-0 truncate">{l.domain}</span>
@@ -742,7 +759,7 @@ function QuestsScreen() {
         {!board && !error && <Skeleton lines={6} />}
         {board && (
           <div className="space-y-3">
-            {board.quests.map((q) => <QuestCard key={q.id} quest={q} onVerified={load} />)}
+            {(board.quests || []).map((q) => <QuestCard key={q.id} quest={q} onVerified={load} />)}
           </div>
         )}
         <p className="text-[11px] text-[#565a68] mt-3">
@@ -759,6 +776,8 @@ function QuestsScreen() {
 
 export default function App() {
   const [tab, setTab] = useState('chat')
+  const [visited, setVisited] = useState({ chat: true })
+  const go = (id) => { setVisited((v) => ({ ...v, [id]: true })); setTab(id) }
 
   return (
     <div className="max-w-3xl mx-auto px-5 py-10">
@@ -776,7 +795,7 @@ export default function App() {
           {[['chat', 'Chat'], ['profile', 'Profile'], ['quests', 'Quests'], ['report', 'Insights'], ['graph', 'Memory Graph']].map(([id, label]) => (
             <button
               key={id}
-              onClick={() => setTab(id)}
+              onClick={() => go(id)}
               className={`px-4 py-2 text-sm transition border-b-2 -mb-px ${
                 tab === id
                   ? 'border-[#f0ede6] text-[#f0ede6]'
@@ -789,11 +808,11 @@ export default function App() {
         </nav>
       </header>
 
-      {tab === 'chat' && <ChatScreen />}
-      {tab === 'profile' && <ProfileScreen />}
-      {tab === 'quests' && <QuestsScreen />}
-      {tab === 'report' && <ReportScreen />}
-      {tab === 'graph' && <GraphScreen />}
+      <div className={tab === 'chat' ? '' : 'hidden'}><ChatScreen /></div>
+      {visited.profile && <div className={tab === 'profile' ? '' : 'hidden'}><ProfileScreen /></div>}
+      {visited.quests && <div className={tab === 'quests' ? '' : 'hidden'}><QuestsScreen /></div>}
+      {visited.report && <div className={tab === 'report' ? '' : 'hidden'}><ReportScreen /></div>}
+      {visited.graph && <div className={tab === 'graph' ? '' : 'hidden'}><GraphScreen /></div>}
 
       <footer className="mt-14 text-center text-[11px] text-[#3f424e] font-mono">
         the house always remembers · built on cognee remember / recall / forget

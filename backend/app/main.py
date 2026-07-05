@@ -132,7 +132,12 @@ class ChatTurn(BaseModel):
 def chat_turn(t: ChatTurn, background: BackgroundTasks):
     """One conversational turn. Reply returns immediately; the durable parts
     of the exchange are distilled into memory in the background."""
-    history = [m for m in t.messages if m.get("role") in ("user", "assistant")][-24:]
+    history = [m for m in t.messages
+               if m.get("role") in ("user", "assistant")
+               and isinstance(m.get("content"), str) and m["content"].strip()][-24:]
+    # the window must never start mid-exchange: first message has to be a user turn
+    while history and history[0]["role"] != "user":
+        history.pop(0)
     if not history or history[-1]["role"] != "user":
         raise HTTPException(400, "last message must be from the user")
     reply = chat.converse(history)

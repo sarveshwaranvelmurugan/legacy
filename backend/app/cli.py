@@ -80,9 +80,9 @@ def _answer(question: str) -> None:
 def _ask_hypothesis(hyp: dict) -> None:
     console.print()
     console.print(Panel(
-        f"[bold]{hyp['hypothesis']}[/]\n\n"
-        f"[dim]pattern: {hyp['pattern']}\n"
-        f"{hyp['confidence']}% confidence · {hyp['supporting_nodes']} supporting nodes[/]",
+        f"[bold]{hyp.get('hypothesis', '(unreadable hypothesis)')}[/]\n\n"
+        f"[dim]pattern: {hyp.get('pattern', '?')}\n"
+        f"{hyp.get('confidence', 50)}% confidence · {hyp.get('supporting_nodes', 0)} supporting nodes[/]",
         title="legacy asks", title_align="left", border_style="yellow",
     ))
     ans = console.input("[yellow]accurate / partial / wrong (or enter to skip) › [/]").strip().lower()
@@ -95,7 +95,7 @@ def _ask_hypothesis(hyp: dict) -> None:
     with console.status("[dim]recalibrating the graph…[/]"):
         updated = engines.respond_to_hypothesis(hyp["id"], mapping[ans], context)
     console.print(f"[green]✓ graph recalibrated — {updated['status']}, "
-                  f"confidence {hyp['confidence']}% → {updated['confidence']}%[/]")
+                  f"confidence {hyp.get('confidence', 50)}% → {updated.get('confidence', '?')}%[/]")
 
 
 def _report() -> None:
