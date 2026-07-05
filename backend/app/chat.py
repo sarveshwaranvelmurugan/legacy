@@ -27,8 +27,7 @@ goals, preferences, facts, history, work activity). HARD RULE: before you ever s
 don't know, don't have a record, or haven't been told something ABOUT THE USER (their \
 possessions, preferences, projects, history, plans), you MUST call search_memory first — \
 claiming ignorance about the user without searching is the one failure you may never \
-commit. Also search whenever their past would improve your answer. Skip it only for \
-pure general-knowledge questions.
+commit. If a question has multiple distinct parts about the user, search for each part (multiple search_memory calls are fine) before answering any of them. Also search whenever their past would improve your answer. Skip it only for pure general-knowledge questions.
 
 Style: conversational and concise (this renders in a terminal). Reference what you \
 remember about the user naturally, like a friend would — not like a database report."""
@@ -56,7 +55,7 @@ def converse(history: list[dict], on_status=None) -> str:
     messages = list(history)
     reply_parts: list[str] = []
 
-    for _ in range(3):  # at most 2 memory lookups per turn
+    for _ in range(3):  # at most 2 memory-lookup rounds per turn
         response = _client.messages.create(
             model=config.CME_MODEL,
             max_tokens=1200,
@@ -67,22 +66,28 @@ def converse(history: list[dict], on_status=None) -> str:
         reply_parts = [b.text for b in response.content if b.type == "text"]
         if response.stop_reason != "tool_use":
             break
-        tool_use = next(b for b in response.content if b.type == "tool_use")
-        if on_status:
-            on_status(f"remembering: {tool_use.input.get('query', '')[:60]}…")
-        recalled = cognee_client.recall(
-            tool_use.input["query"],
-            system_prompt=(
-                "Return the relevant facts about this user from the graph, dense "
-                "and factual, with dates where present. If nothing relevant, say so."
-            ),
-        )
+        # Answer EVERY tool_use block — an unanswered one is an API error.
+        # (disable_parallel_tool_use makes >1 rare, but never rely on rare.)
+        tool_uses = [b for b in response.content if b.type == "tool_use"]
         messages.append({"role": "assistant", "content": response.content})
-        messages.append({
-            "role": "user",
-            "content": [{"type": "tool_result", "tool_use_id": tool_use.id,
-                         "content": recalled or "no relevant memory found"}],
-        })
+        results = []
+        for tool_use in tool_uses:
+            query = tool_use.input.get("query", "")
+            if on_status:
+                on_status(f"remembering: {query[:60]}…")
+            try:
+                recalled = cognee_client.recall(
+                    query,
+                    system_prompt=(
+                        "Return the relevant facts about this user from the graph, dense "
+                        "and factual, with dates where present. If nothing relevant, say so."
+                    ),
+                )
+            except Exception as e:
+                recalled = f"memory lookup failed ({type(e).__name__}) — answer from the conversation alone"
+            results.append({"type": "tool_result", "tool_use_id": tool_use.id,
+                            "content": recalled or "no relevant memory found"})
+        messages.append({"role": "user", "content": results})
 
     return "\n".join(p for p in reply_parts if p.strip()) or "(no reply)"
 
