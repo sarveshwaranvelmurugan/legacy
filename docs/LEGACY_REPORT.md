@@ -244,6 +244,16 @@ Every feature was verified end-to-end during development, including scripted
 Playwright browser sessions with console-error monitoring and screenshots;
 cross-session memory, quest proof verification, transcript distillation, and the
 new-teammate onboarding recall were each demonstrated against the live system.
+
+Before submission the codebase went through a systematic bug hunt: two
+independent AI review passes (backend and frontend) plus a manual audit of every
+demo path, yielding ~20 fixes — among them a chat-history windowing bug that
+would deterministically break every conversation at turn 13, false-success
+rendering on failed quest verifications, GitHub rate-limit handling, ledger/graph
+consistency on duplicate submissions, and state preservation across tab switches.
+Every fix was regression-tested against the live system (including a 25-message
+conversation and a same-reflection-twice dedupe check) before landing.
+
 Total Anthropic inference spend for the entire build and all testing: well under
 one dollar — persistent memory is not just better UX than context-stuffing, it is
 dramatically cheaper.
